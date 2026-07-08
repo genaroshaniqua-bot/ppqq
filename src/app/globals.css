@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #f8f7f8;
+  --color-text: #0c090d;
+  --color-muted: rgba(12, 9, 13, 0.64);
+  --color-border: #eceaec;
+  --color-card: #ffffff;
+  --color-primary: #54c5b7;
+  --color-pink: #f084bc;
+  --color-blue: #6283d6;
+  --color-purple: #946cf3;
+  --color-lime: #b8ff26;
+  --color-danger: #c93a4b;
+  --radius-pill: 999px;
+  --radius-card: 20px;
+  --radius-small: 8px;
+  --font-sans: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Noto Serif SC", "Songti SC", "PingFang SC", system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(84, 197, 183, 0.14), transparent 28rem),
+    radial-gradient(circle at 94% 10%, rgba(240, 132, 188, 0.18), transparent 26rem),
+    var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(84, 197, 183, 0.9);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(184, 255, 38, 0.6);
+}
+
+.rail-scroll {
+  scrollbar-width: none;
+}
+
+.rail-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.surface-grid {
+  background-image:
+    linear-gradient(rgba(12, 9, 13, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(12, 9, 13, 0.035) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+.clip-card {
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
