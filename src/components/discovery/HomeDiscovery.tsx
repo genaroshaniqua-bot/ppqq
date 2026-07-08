@@ -11,24 +11,42 @@ import { boothTemplates, creationTemplates, discoveryCategories } from "@/data/m
 import { mockCharacters } from "@/data/mock-characters";
 import { cn } from "@/lib/utils";
 
-const heroCards = [
+const coverCards = [
   {
-    title: "OC 创作助手",
-    desc: "从一句灵感生成完整人设、角色卡和后续创作建议。",
+    title: "OC 创作工作台",
+    desc: "输入一句灵感，生成完整人设、角色卡和后续创作建议。",
     href: "/create",
-    color: "bg-primary"
+    image: "/images/hero-workbench.png",
+    badge: "开始生成",
+    credit: "AI OC Studio",
+    position: "center"
   },
   {
     title: "角色资产库",
     desc: "长期保存设定、口癖、关系线和可继续生成的素材。",
     href: "/characters",
-    color: "bg-purple text-white"
+    image: "/images/case-sheet.png",
+    badge: "角色卡",
+    credit: "OC Library",
+    position: "left top"
   },
   {
-    title: "摊宣工具",
+    title: "摊宣与周边",
     desc: "把商品信息改写成小红书、微博、QQ 群和 B 站动态文案。",
     href: "/booth",
-    color: "bg-pink"
+    image: "/images/hero-workbench.png",
+    badge: "摊主工具",
+    credit: "Booth Kit",
+    position: "right bottom"
+  },
+  {
+    title: "头像提示词套装",
+    desc: "把角色设定整理成构图、光线、服装和负面提示词。",
+    href: "/create",
+    image: "/images/case-sheet.png",
+    badge: "头像方向",
+    credit: "Prompt Pack",
+    position: "right top"
   }
 ];
 
@@ -54,21 +72,13 @@ export function HomeDiscovery() {
 
   return (
     <div>
-      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8 lg:py-12">
-        <div className="flex flex-col justify-center">
-          <p className="mb-4 inline-flex w-fit items-center gap-2 rounded-pill bg-white px-4 py-2 text-xs font-black uppercase text-primary shadow-soft">
-            <Sparkles size={15} aria-hidden="true" />
-            AI 二次元创作工具平台
-          </p>
-          <h1 className="max-w-3xl font-display text-4xl font-black leading-[1.05] sm:text-5xl md:text-7xl">
-            从一句灵感，生成能继续创作的 OC 资产。
+      <section className="mx-auto max-w-[1920px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.68fr)] lg:items-center">
+          <h1 className="font-display text-[clamp(2.7rem,6.8vw,5.8rem)] font-black leading-[1.03]">
+            让每个 OC 灵感，都能立刻变成可创作资产
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-muted md:text-lg">
-            快速生成角色设定、角色卡、头像方向、剧情片段、摊宣文案和周边预览方案。首页就是创作发现页，打开就能开始。
-          </p>
-
           <form
-            className="mt-7 flex max-w-2xl flex-col gap-3 rounded-[28px] border border-line bg-white p-2 shadow-soft sm:flex-row"
+            className="flex w-full flex-col gap-3 rounded-[32px] border border-line bg-white p-2 shadow-soft sm:flex-row lg:justify-self-end"
             onSubmit={(event) => {
               event.preventDefault();
               window.location.href = `/create?idea=${encodeURIComponent(query || "会收集星光碎片的 OC")}`;
@@ -84,65 +94,83 @@ export function HomeDiscovery() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 className="w-full bg-transparent text-base font-semibold outline-none placeholder:text-muted"
-                placeholder="输入灵感：雨夜、猫耳机械师、旧校舍广播..."
+                placeholder="搜索模板，或输入角色灵感"
               />
             </div>
             <button
               type="submit"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill bg-ink px-5 text-sm font-black text-white transition hover:bg-primary hover:text-ink"
+              className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-pill bg-ink px-5 text-sm font-black text-white transition hover:bg-primary hover:text-ink"
             >
               立即创建
               <ArrowRight size={17} aria-hidden="true" />
             </button>
           </form>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {heroCards.map((card) => (
-              <Link key={card.title} href={card.href} className={cn("rounded-card p-4 shadow-soft transition hover:-translate-y-1", card.color)}>
-                <h2 className="font-display text-lg font-black">{card.title}</h2>
-                <p className="mt-2 text-sm font-semibold leading-6 opacity-80">{card.desc}</p>
-              </Link>
-            ))}
-          </div>
         </div>
 
-        <div className="relative min-h-[520px] overflow-hidden rounded-[36px] border border-line bg-white shadow-soft">
-          <Image
-            src="/images/hero-workbench.png"
-            alt="AI OC 创作工作台背景图"
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/62 via-transparent to-white/20" />
-          <div className="absolute bottom-5 left-5 right-5 grid gap-3 sm:grid-cols-3">
-            {["角色卡", "头像提示词", "周边方案"].map((item, index) => (
-              <div key={item} className="rounded-card bg-white/88 p-4 backdrop-blur">
-                <p className="text-xs font-black text-muted">STEP {index + 1}</p>
-                <p className="mt-1 font-display text-lg font-black">{item}</p>
+        <SwipeRail className="mt-8 lg:gap-5">
+          {coverCards.map((card, index) => (
+            <Link
+              key={card.title}
+              href={card.href}
+              className="group relative h-[230px] min-w-[86vw] snap-start overflow-hidden rounded-[32px] bg-ink shadow-soft transition hover:-translate-y-1 sm:h-[270px] sm:min-w-[620px] lg:h-[300px] lg:min-w-[720px]"
+            >
+              <Image
+                src={card.image}
+                alt={`${card.title} 封面图`}
+                fill
+                priority={index < 2}
+                sizes="(max-width: 640px) 86vw, 720px"
+                className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                style={{ objectPosition: card.position }}
+              />
+              <div className="absolute inset-0 bg-ink/60" />
+              <div className="absolute inset-0 bg-gradient-to-r from-ink/88 via-ink/38 to-ink/10" />
+              <div className="absolute left-5 right-5 top-5 sm:left-9 sm:right-9 sm:top-8">
+                <span className="inline-flex rounded-pill bg-lime px-3 py-1 text-xs font-black text-ink">{card.badge}</span>
+                <h2 className="mt-4 max-w-xl font-display text-2xl font-black leading-tight text-white drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] sm:mt-5 sm:text-4xl">
+                  {card.title}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] sm:mt-3 sm:text-base sm:leading-7">
+                  {card.desc}
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="absolute bottom-5 right-5 inline-flex min-h-10 items-center gap-2 rounded-pill bg-white/22 px-3 text-sm font-black text-white backdrop-blur">
+                <span className="grid size-7 place-items-center rounded-pill bg-primary text-ink">
+                  <Sparkles size={15} aria-hidden="true" />
+                </span>
+                {card.credit}
+              </div>
+            </Link>
+          ))}
+        </SwipeRail>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <SwipeRail>
+      <section className="mx-auto max-w-[1920px] px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <h2 className="font-display text-3xl font-black md:text-4xl">12,000+ 创作模板与角色资产</h2>
+          <Link
+            href="/create"
+            className="inline-flex min-h-12 w-fit items-center justify-center gap-2 rounded-pill bg-white px-5 text-sm font-black shadow-soft transition hover:bg-primary/15"
+          >
+            全部分类
+            <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </div>
+        <SwipeRail className="items-center">
           {discoveryCategories.map((category) => (
             <button
               key={category}
               type="button"
               onClick={() => setActiveCategory(category)}
               className={cn(
-                "flex min-h-24 min-w-24 snap-start flex-col items-center justify-center gap-2 rounded-pill border border-line bg-white px-4 text-sm font-black shadow-soft transition hover:-translate-y-1",
-                activeCategory === category && "border-ink bg-ink text-white"
+                "flex min-h-16 min-w-[148px] snap-start items-center gap-3 rounded-pill border border-transparent bg-transparent px-2 text-left text-sm font-black transition hover:-translate-y-1",
+                activeCategory === category && "bg-white shadow-soft"
               )}
             >
-              <span className="grid size-11 place-items-center rounded-pill bg-primary/18 text-ink">
+              <span className="grid size-14 shrink-0 place-items-center rounded-pill bg-[radial-gradient(circle_at_30%_25%,#ffffff_0,#f084bc_22%,#946cf3_58%,#54c5b7_100%)] text-sm font-black text-white shadow-soft">
                 {category.slice(0, 2)}
               </span>
-              {category}
+              <span className="leading-tight text-ink">{category}</span>
             </button>
           ))}
         </SwipeRail>
