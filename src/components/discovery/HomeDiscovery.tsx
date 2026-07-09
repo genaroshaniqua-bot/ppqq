@@ -2,8 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BadgeCheck, Bookmark, Heart, MessageCircle, Search, ShoppingBag, Sparkles, Store, Wand2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  BookOpenText,
+  Bot,
+  Boxes,
+  Brush,
+  FolderHeart,
+  Heart,
+  MessageCircle,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  Store,
+  Wand2
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { CharacterCard } from "@/components/character/CharacterCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SwipeRail } from "@/components/ui/SwipeRail";
@@ -12,69 +28,63 @@ import { mockCharacters } from "@/data/mock-characters";
 import { creatorServices, marketProducts } from "@/data/mock-platform";
 import { cn } from "@/lib/utils";
 
-const coverCards = [
+type FeatureEntry = {
+  title: string;
+  desc: string;
+  href: string;
+  action: string;
+  icon: LucideIcon;
+  tone: string;
+};
+
+const featureEntries: FeatureEntry[] = [
   {
-    title: "OC 创作工作台",
-    desc: "输入一句灵感，生成完整人设、角色卡和后续创作建议。",
+    title: "OC 创作",
+    desc: "生成 OC 人设、外观、世界观与故事方向。",
     href: "/create",
-    image: "/images/hero-workbench.png",
-    badge: "开始生成",
-    credit: "AI OC Studio",
-    position: "center"
+    action: "开始创作",
+    icon: Brush,
+    tone: "from-[#8be5df]/38 to-[#f9f5ff]/70"
   },
   {
-    title: "角色资产库",
-    desc: "长期保存设定、口癖、关系线和可继续生成的素材。",
+    title: "角色资产",
+    desc: "管理头像、立绘、设定、口癖和周边方向。",
     href: "/characters",
-    image: "/images/case-sheet.png",
-    badge: "角色卡",
-    credit: "OC Library",
-    position: "left top"
+    action: "打开资产库",
+    icon: FolderHeart,
+    tone: "from-[#f7a9d4]/34 to-[#ffffff]/72"
   },
   {
-    title: "摊宣与周边",
-    desc: "把商品信息改写成小红书、微博、QQ 群和 B 站动态文案。",
-    href: "/booth",
-    image: "/images/hero-workbench.png",
-    badge: "摊主工具",
-    credit: "Booth Kit",
-    position: "right bottom"
-  },
-  {
-    title: "逛商品",
-    desc: "浏览头像模板、角色卡模板、徽章、立牌和轻量实体周边预览。",
-    href: "/market",
-    image: "/images/case-sheet.png",
-    badge: "商品发现",
-    credit: "Market",
-    position: "center"
+    title: "灵感工具",
+    desc: "随机设定、关键词扩写、风格参考一键续写。",
+    href: "/create?mode=idea",
+    action: "浏览灵感",
+    icon: Sparkles,
+    tone: "from-[#bfa7ff]/34 to-[#f8fbff]/72"
   },
   {
     title: "找创作者",
-    desc: "从头像、立绘、摊宣和周边图案服务开始筛选创作者。",
+    desc: "浏览约稿、头像、立绘、周边设计服务。",
     href: "/commissions",
-    image: "/images/hero-workbench.png",
-    badge: "接单服务",
-    credit: "Commission",
-    position: "left bottom"
+    action: "查看服务",
+    icon: Store,
+    tone: "from-[#ffe4ac]/38 to-[#fff8fb]/74"
   },
   {
     title: "角色互动",
-    desc: "从自己的角色资产发起场景对话，测试口癖、关系和剧情张力。",
+    desc: "与自己的 OC 进行剧情、关系和对话测试。",
     href: "/chat",
-    image: "/images/case-sheet.png",
-    badge: "互动会话",
-    credit: "Chat",
-    position: "right top"
+    action: "进入互动",
+    icon: MessageCircle,
+    tone: "from-[#a9cdfb]/38 to-[#fffafe]/74"
   },
   {
-    title: "头像提示词套装",
-    desc: "把角色设定整理成构图、光线、服装和负面提示词。",
-    href: "/create",
-    image: "/images/case-sheet.png",
-    badge: "头像方向",
-    credit: "Prompt Pack",
-    position: "right top"
+    title: "我的空间",
+    desc: "聚合收藏、订单、资产库和委托记录。",
+    href: "/profile",
+    action: "进入我的",
+    icon: Boxes,
+    tone: "from-[#d9ff9f]/28 to-[#ffffff]/78"
   }
 ];
 
@@ -95,7 +105,7 @@ const categoryFeatures: Record<
     capabilities: ["角色身份与外貌", "性格、能力与弱点", "可分享角色卡"],
     href: "/create",
     action: "开始生成 OC",
-    accent: "#54c5b7"
+    accent: "#9c7cf4"
   },
   人设: {
     title: "沉淀可长期维护的人设",
@@ -127,7 +137,7 @@ const categoryFeatures: Record<
     capabilities: ["平台标题与正文", "商品菜单", "价格牌文案"],
     href: "/booth",
     action: "进入摊宣工具",
-    accent: "#b8ff26"
+    accent: "#d9b86d"
   },
   周边预览: {
     title: "规划角色周边展示方案",
@@ -135,29 +145,15 @@ const categoryFeatures: Record<
     capabilities: ["周边品类建议", "画面与材质说明", "预售展示文案"],
     href: "/booth?mode=merch",
     action: "规划周边方案",
-    accent: "#f2b84b"
+    accent: "#54c5b7"
   }
 };
 
 export function HomeDiscovery() {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("OC");
-  const [activeCoverIndex, setActiveCoverIndex] = useState(0);
-  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
   const activeCategoryFeature = categoryFeatures[activeCategory] ?? categoryFeatures.OC;
-
-  useEffect(() => {
-    if (isCarouselPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setActiveCoverIndex((current) => (current + 1) % coverCards.length);
-    }, 3600);
-
-    return () => window.clearInterval(timer);
-  }, [isCarouselPaused]);
 
   const filteredCharacters = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -175,159 +171,163 @@ export function HomeDiscovery() {
   }
 
   return (
-    <div>
-      <section className="mx-auto max-w-[1920px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(420px,0.78fr)] lg:items-end">
-          <div className="max-w-[860px]">
-            <p className="oc-kicker mb-3 text-[11px] font-black text-primary">AI OC Studio</p>
-            <h1 className="oc-title text-[clamp(2.45rem,4.9vw,5.15rem)] font-black leading-[1.02]">
-              让每个 OC 灵感，立刻变成可创作资产
-            </h1>
-            <p className="mt-5 max-w-2xl text-base font-bold leading-7 text-muted sm:text-lg">
-              从一句设定开始，整理角色卡、头像方向、剧情片段、摊宣文案和周边预览。
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {["角色卡", "剧情片段", "头像提示词", "摊宣菜单"].map((item) => (
-                <span key={item} className="rounded-pill border border-line bg-white/78 px-3 py-1 text-xs font-black text-muted shadow-[0_8px_22px_rgba(18,16,22,0.05)]">
-                  {item}
-                </span>
+    <div className="studio-shell overflow-hidden">
+      <section className="relative isolate mx-auto max-w-[1440px] px-4 pb-10 pt-8 sm:px-6 lg:px-8 lg:pb-14">
+        <div className="studio-particles" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+
+        <div className="studio-hero grid gap-6 rounded-[34px] p-4 sm:p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)] lg:p-6">
+          <div className="glass-panel relative z-10 flex min-h-[520px] flex-col justify-between overflow-hidden rounded-[30px] p-6 sm:p-8 lg:p-10">
+            <div>
+              <p className="oc-kicker mb-4 text-[11px] font-black text-primary">AI OC Studio</p>
+              <h1 className="oc-title max-w-xl text-[clamp(2.6rem,6vw,5.2rem)] font-black leading-[1.02]">
+                AI OC 创作工作台
+              </h1>
+              <p className="mt-5 max-w-xl text-base font-bold leading-7 text-ink/76 sm:text-lg">
+                创建你的原创角色，管理设定、头像、周边与互动内容。
+              </p>
+              <p className="mt-3 max-w-lg text-sm font-semibold leading-6 text-muted">
+                从灵感设定到角色资产，一站式完成你的 OC 世界。
+              </p>
+
+              <form
+                className="mt-7 flex flex-col gap-3 rounded-[26px] border border-white/72 bg-white/54 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur sm:flex-row"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  window.location.href = `/create?idea=${encodeURIComponent(query || "银发星轨少女，温柔但擅长机关术")}`;
+                }}
+              >
+                <label className="sr-only" htmlFor="home-search">
+                  搜索创作模板或输入角色灵感
+                </label>
+                <div className="flex min-h-12 flex-1 items-center gap-3 rounded-pill bg-white/76 px-4 ring-1 ring-inset ring-white/86">
+                  <Search size={18} className="text-primary" aria-hidden="true" />
+                  <input
+                    id="home-search"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    className="w-full bg-transparent text-sm font-bold text-ink outline-none placeholder:text-muted sm:text-base"
+                    placeholder="输入灵感，例如：机械猫耳少女、温柔系"
+                  />
+                </div>
+                <button type="submit" className="dream-btn-primary shrink-0">
+                  开始创作
+                  <ArrowRight size={17} aria-hidden="true" />
+                </button>
+              </form>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href="/create" className="dream-btn-secondary min-h-11 px-5">
+                  浏览灵感
+                  <Wand2 size={16} aria-hidden="true" />
+                </Link>
+                <Link href="/characters" className="dream-btn-secondary min-h-11 px-5">
+                  角色资产
+                  <FolderHeart size={16} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-8 grid grid-cols-3 gap-3 text-ink">
+              {[
+                ["创作", "OC 人设"],
+                ["资产", "设定沉淀"],
+                ["商业", "商品与接单"]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[22px] border border-white/60 bg-white/42 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                  <p className="text-xs font-black text-primary">{label}</p>
+                  <p className="mt-2 text-sm font-black leading-tight sm:text-base">{value}</p>
+                </div>
               ))}
             </div>
           </div>
-          <form
-            className="oc-panel flex w-full flex-col gap-3 rounded-[30px] p-2 sm:flex-row lg:max-w-[760px] lg:justify-self-end"
-            onSubmit={(event) => {
-              event.preventDefault();
-              window.location.href = `/create?idea=${encodeURIComponent(query || "会收集星光碎片的 OC")}`;
-            }}
-          >
-            <label className="sr-only" htmlFor="home-search">
-              搜索创作模板或输入角色灵感
-            </label>
-            <div className="flex min-h-12 flex-1 items-center gap-3 rounded-pill bg-bg/80 px-4 ring-1 ring-inset ring-white">
-              <Search size={19} className="text-muted" aria-hidden="true" />
-              <input
-                id="home-search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="w-full bg-transparent text-base font-semibold outline-none placeholder:text-muted"
-                placeholder="搜索模板，或输入角色灵感"
-              />
-            </div>
-            <button
-              type="submit"
-              className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-pill bg-ink px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(18,16,22,0.18)] transition hover:bg-primary hover:text-ink"
-            >
-              立即创建
-              <ArrowRight size={17} aria-hidden="true" />
-            </button>
-          </form>
-        </div>
 
-        <div
-          className="mt-8"
-          aria-label="核心功能轮播"
-          onMouseEnter={() => setIsCarouselPaused(true)}
-          onMouseLeave={() => setIsCarouselPaused(false)}
-          onFocus={() => setIsCarouselPaused(true)}
-          onBlur={() => setIsCarouselPaused(false)}
-        >
-          <div className="relative isolate h-[300px] overflow-hidden [perspective:1400px] sm:h-[380px] lg:h-[470px]">
-            {coverCards.map((card, index) => {
-              const active = index === activeCoverIndex;
-              const relativePosition = (index - activeCoverIndex + coverCards.length) % coverCards.length;
-              const stagePosition = relativePosition === coverCards.length - 1 ? -1 : relativePosition;
-              const stageStyles =
-                stagePosition === 0
-                  ? { transform: "translate3d(-50%, 0, 0) scale(1)", filter: "blur(0px)", opacity: 1, zIndex: 4 }
-                  : stagePosition === -1
-                    ? { transform: "translate3d(-88%, 7%, -150px) scale(0.82)", filter: "blur(4px)", opacity: 0.56, zIndex: 2 }
-                    : stagePosition === 1
-                      ? { transform: "translate3d(-12%, 7%, -150px) scale(0.82)", filter: "blur(4px)", opacity: 0.56, zIndex: 2 }
-                      : { transform: "translate3d(-50%, 12%, -260px) scale(0.68)", filter: "blur(10px)", opacity: 0.28, zIndex: 1 };
-
-              return (
-                <Link
-                  key={card.title}
-                  href={card.href}
-                  tabIndex={active ? 0 : -1}
-                  aria-hidden={!active}
-                  className={cn(
-                    "asset-sheen group absolute left-1/2 top-0 h-full w-[86%] overflow-hidden rounded-[30px] border border-white/80 shadow-[0_30px_90px_rgba(18,16,22,0.16)] transition-[transform,filter,opacity] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:w-[78%] lg:rounded-[34px]",
-                    active ? "pointer-events-auto" : "pointer-events-none"
-                  )}
-                  style={stageStyles}
-                >
-                  <Image
-                    src={card.image}
-                    alt={`${card.title} 封面图`}
-                    fill
-                    priority={index === 0}
-                    sizes="(max-width: 1024px) 100vw, 1320px"
-                    className="object-cover"
-                    style={{ objectPosition: card.position }}
-                  />
-                  <div className="absolute inset-0 bg-ink/42" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-ink/86 via-ink/34 to-transparent" />
-                  <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/22 to-transparent" />
-                  <div className="absolute left-5 right-5 top-5 sm:left-9 sm:right-9 sm:top-8">
-                    <span className="inline-flex rounded-pill bg-lime px-3 py-1 text-xs font-black text-ink shadow-[0_8px_20px_rgba(204,255,56,0.28)]">{card.badge}</span>
-                    <h2 className="oc-title mt-5 max-w-xl text-3xl font-black leading-tight text-white drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] sm:text-5xl">
-                      {card.title}
-                    </h2>
-                    <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] sm:text-lg sm:leading-8">
-                      {card.desc}
-                    </p>
-                  </div>
-                  <div className="absolute bottom-5 right-5 inline-flex min-h-10 items-center gap-2 rounded-pill border border-white/22 bg-white/24 px-3 text-sm font-black text-white backdrop-blur">
-                    <span className="grid size-7 place-items-center rounded-pill bg-primary text-ink">
-                      <Sparkles size={15} aria-hidden="true" />
-                    </span>
-                    {card.credit}
-                  </div>
-                  <span className="absolute bottom-5 left-5 inline-flex min-h-10 items-center gap-2 rounded-pill bg-white px-4 text-sm font-black text-ink opacity-0 shadow-soft transition group-hover:opacity-100 group-focus-visible:opacity-100">
-                    进入功能
-                    <ArrowRight size={16} aria-hidden="true" />
-                  </span>
-                </Link>
-              );
-            })}
-
-            <div
-              className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center gap-1 opacity-60 drop-shadow-[0_1px_2px_rgba(255,255,255,0.45)] transition-opacity hover:opacity-85"
-              role="group"
-              aria-label="选择功能窗口"
-            >
-              {coverCards.map((card, index) => {
-                const active = index === activeCoverIndex;
-                return (
-                  <button
-                    key={card.title}
-                    type="button"
-                    onClick={() => setActiveCoverIndex(index)}
-                    onMouseEnter={() => setActiveCoverIndex(index)}
-                    className="grid size-9 place-items-center rounded-full transition hover:bg-ink/5"
-                    aria-label={`显示${card.title}`}
-                    aria-pressed={active}
-                  >
-                    <span className={cn("size-2.5 rounded-full transition-all duration-300", active ? "scale-110 bg-[rgba(12,9,13,0.7)]" : "bg-[rgba(12,9,13,0.22)]")} />
-                  </button>
-                );
-              })}
+          <div className="relative min-h-[420px] overflow-hidden rounded-[30px] border border-white/72 bg-white/36 shadow-[0_30px_90px_rgba(72,48,118,0.16)] backdrop-blur-xl lg:min-h-[520px]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.88),transparent_24rem),radial-gradient(circle_at_80%_16%,rgba(240,160,208,0.32),transparent_22rem),radial-gradient(circle_at_70%_84%,rgba(142,184,240,0.32),transparent_24rem)]" />
+            <Image
+              src="/images/site-overview.png"
+              alt="AI OC Studio 角色创作平台界面与二次元角色素材展示"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 760px"
+              className="object-contain p-3 sm:p-5 lg:p-7"
+            />
+            <div className="pointer-events-none absolute inset-0 rounded-[30px] ring-1 ring-inset ring-white/72" />
+            <div className="absolute bottom-4 left-4 right-4 grid gap-3 sm:grid-cols-3">
+              {[
+                { title: "角色资产", text: "头像、立绘、设定" },
+                { title: "逛商品", text: "模板、徽章、小卡" },
+                { title: "角色互动", text: "剧情、关系、口癖" }
+              ].map((item) => (
+                <div key={item.title} className="rounded-[20px] border border-white/68 bg-white/72 p-3 shadow-[0_14px_34px_rgba(72,48,118,0.12)] backdrop-blur-xl">
+                  <p className="text-xs font-black text-primary">{item.title}</p>
+                  <p className="mt-1 text-xs font-bold text-muted">{item.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1920px] px-4 pb-8 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <h2 className="oc-title text-3xl font-black leading-tight md:text-4xl">从创作到交易的六个主入口</h2>
+            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-muted">
+              首页第一屏保留完整平台感：AI 创作是入口，角色资产连接商品、接单和互动。
+            </p>
+          </div>
+          <Link href="/create" className="dream-btn-secondary w-fit">
+            进入工作台
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {featureEntries.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <Link
+                key={feature.title}
+                href={feature.href}
+                className={cn(
+                  "glass-panel glass-panel-hover group relative min-h-[190px] overflow-hidden p-5",
+                  "bg-gradient-to-br",
+                  feature.tone
+                )}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <span className="grid size-12 place-items-center rounded-[18px] border border-white/70 bg-white/68 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                    <Icon size={21} aria-hidden="true" />
+                  </span>
+                  <span className="rounded-pill border border-white/70 bg-white/50 px-3 py-1 text-xs font-black text-muted">
+                    AI OC
+                  </span>
+                </div>
+                <h3 className="oc-title mt-6 text-2xl font-black">{feature.title}</h3>
+                <p className="mt-3 max-w-sm text-sm font-semibold leading-6 text-muted">{feature.desc}</p>
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-primary">
+                  {feature.action}
+                  <ArrowRight size={16} className="transition group-hover:translate-x-1" aria-hidden="true" />
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <h2 className="oc-title text-3xl font-black leading-tight md:text-4xl">12,000+ 创作模板、商品与创作者服务</h2>
-          <Link
-            href="/create"
-            className="inline-flex min-h-12 w-fit items-center justify-center gap-2 rounded-pill border border-line bg-white px-5 text-sm font-black shadow-soft transition hover:bg-primary/15"
-          >
+          <h2 className="oc-title text-3xl font-black leading-tight md:text-4xl">按创作目标探索</h2>
+          <Link href="/create" className="dream-btn-secondary w-fit">
             全部分类
-            <ArrowRight size={17} aria-hidden="true" />
+            <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
         <SwipeRail className="items-center">
@@ -338,11 +338,11 @@ export function HomeDiscovery() {
               onClick={() => setActiveCategory(category)}
               aria-pressed={activeCategory === category}
               className={cn(
-                "flex min-h-16 min-w-[148px] snap-start items-center gap-3 rounded-pill border border-transparent bg-white/24 px-2 text-left text-sm font-black transition hover:-translate-y-1 hover:bg-white/70",
-                activeCategory === category && "border-white bg-white shadow-soft"
+                "flex min-h-16 min-w-[148px] snap-start items-center gap-3 rounded-pill border border-white/60 bg-white/36 px-2 text-left text-sm font-black shadow-[0_12px_30px_rgba(72,48,118,0.08)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/70",
+                activeCategory === category && "border-[#f2dc9a] bg-white shadow-[0_18px_42px_rgba(156,124,244,0.16)]"
               )}
             >
-              <span className="grid size-14 shrink-0 place-items-center rounded-pill bg-[radial-gradient(circle_at_30%_25%,#ffffff_0,#ff7db5_22%,#8a6cff_58%,#32c4b6_100%)] text-sm font-black text-white shadow-soft">
+              <span className="grid size-14 shrink-0 place-items-center rounded-pill bg-[radial-gradient(circle_at_30%_25%,#ffffff_0,#f5a6d1_28%,#9c7cf4_62%,#8eb8f0_100%)] text-sm font-black text-white shadow-[0_10px_24px_rgba(156,124,244,0.2)]">
                 {category.slice(0, 2)}
               </span>
               <span className="leading-tight text-ink">{category}</span>
@@ -351,12 +351,11 @@ export function HomeDiscovery() {
         </SwipeRail>
 
         <div
-          className="oc-panel mt-6 grid gap-6 rounded-[28px] p-5 md:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)_auto] md:items-center md:p-6"
+          className="glass-panel mt-6 grid gap-6 p-5 md:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.85fr)_auto] md:items-center md:p-6"
           aria-live="polite"
         >
           <div className="border-l-4 pl-5" style={{ borderColor: activeCategoryFeature.accent }}>
-            <p className="oc-kicker text-[11px] font-black text-muted">{activeCategory}</p>
-            <h3 className="oc-title mt-1 text-2xl font-black md:text-3xl">{activeCategoryFeature.title}</h3>
+            <h3 className="oc-title text-2xl font-black md:text-3xl">{activeCategoryFeature.title}</h3>
             <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-muted">{activeCategoryFeature.description}</p>
           </div>
 
@@ -369,10 +368,7 @@ export function HomeDiscovery() {
             ))}
           </ul>
 
-          <Link
-            href={activeCategoryFeature.href}
-            className="inline-flex min-h-12 w-fit items-center justify-center gap-2 rounded-pill bg-ink px-5 text-sm font-black text-white transition hover:bg-primary hover:text-ink"
-          >
+          <Link href={activeCategoryFeature.href} className="dream-btn-primary w-fit">
             {activeCategoryFeature.action}
             <ArrowRight size={17} aria-hidden="true" />
           </Link>
@@ -381,11 +377,10 @@ export function HomeDiscovery() {
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Character Rail"
           title="角色卡示例"
           desc="横向浏览示例角色，像逛作品流一样快速感知生成结果。收藏按钮只做前端演示状态。"
           action={
-            <Link href="/characters" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white px-5 text-sm font-black shadow-soft">
+            <Link href="/characters" className="dream-btn-secondary">
               查看角色库
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
@@ -417,16 +412,16 @@ export function HomeDiscovery() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <SectionHeading eyebrow="Template Rail" title="创作模板" desc="模板不是营销卡片，而是后续工作流入口：角色卡、剧情、对话和头像提示词。" />
+        <SectionHeading title="创作模板" desc="模板是后续工作流入口：角色卡、剧情、对话和头像提示词。" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {creationTemplates.map((template) => (
-            <Link key={template.title} href="/create" className="clip-card oc-panel rounded-card p-5 transition hover:-translate-y-1">
+            <Link key={template.title} href="/create" className="clip-card glass-panel glass-panel-hover p-5">
               <span className="inline-flex rounded-pill px-3 py-1 text-xs font-black text-ink" style={{ backgroundColor: template.accent }}>
                 {template.label}
               </span>
               <h3 className="oc-title mt-5 text-2xl font-black">{template.title}</h3>
               <p className="mt-3 text-sm leading-6 text-muted">{template.desc}</p>
-              <span className="mt-5 inline-flex items-center gap-2 text-sm font-black">
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-primary">
                 开始生成
                 <Wand2 size={16} aria-hidden="true" />
               </span>
@@ -436,17 +431,13 @@ export function HomeDiscovery() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <SectionHeading eyebrow="Booth / Merch" title="摊宣与周边方向" desc="面向 Coser、摊主和社团，把商品信息变成平台文案、菜单和价格牌。" />
+        <SectionHeading title="摊宣与周边方向" desc="面向 Coser、摊主和社团，把商品信息变成平台文案、菜单和价格牌。" />
         <SwipeRail>
           {boothTemplates.map((template, index) => (
-            <Link
-              key={template}
-              href="/booth"
-              className="oc-panel min-w-[240px] snap-start rounded-card p-5 transition hover:-translate-y-1"
-            >
+            <Link key={template} href="/booth" className="glass-panel glass-panel-hover min-w-[240px] snap-start p-5">
               <div className="mb-4 flex items-center justify-between">
-                <span className="grid size-12 place-items-center rounded-pill bg-lime text-sm font-black">{index + 1}</span>
-                {index % 2 === 0 ? <BadgeCheck size={20} className="text-primary" aria-hidden="true" /> : <Bookmark size={20} className="text-purple" aria-hidden="true" />}
+                <span className="grid size-12 place-items-center rounded-pill bg-lime text-sm font-black text-ink">{index + 1}</span>
+                {index % 2 === 0 ? <BookOpenText size={20} className="text-primary" aria-hidden="true" /> : <Bot size={20} className="text-purple" aria-hidden="true" />}
               </div>
               <h3 className="oc-title text-xl font-black">{template}</h3>
               <p className="mt-3 text-sm leading-6 text-muted">点击进入工具页，输入商品信息后生成可复制结果。</p>
@@ -457,11 +448,10 @@ export function HomeDiscovery() {
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Market"
           title="逛商品"
-          desc="先用前端 mock 展示数字商品与轻量实体周边预览，愿望单和购物车只做演示状态。"
+          desc="用前端 mock 展示数字商品与轻量实体周边预览，愿望单和购物车只做演示状态。"
           action={
-            <Link href="/market" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white px-5 text-sm font-black shadow-soft">
+            <Link href="/market" className="dream-btn-secondary">
               进入逛商品
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
@@ -469,12 +459,12 @@ export function HomeDiscovery() {
         />
         <SwipeRail>
           {marketProducts.map((product) => (
-            <Link key={product.id} href="/market" className="oc-panel min-w-[260px] snap-start rounded-card p-5 transition hover:-translate-y-1">
+            <Link key={product.id} href="/market" className="glass-panel glass-panel-hover min-w-[260px] snap-start p-5">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <span className="grid size-12 place-items-center rounded-pill text-ink" style={{ backgroundColor: product.accent }}>
                   <ShoppingBag size={19} aria-hidden="true" />
                 </span>
-                <span className="rounded-pill bg-bg px-3 py-1 text-xs font-black text-muted">{product.kind}</span>
+                <span className="rounded-pill bg-white/62 px-3 py-1 text-xs font-black text-muted">{product.kind}</span>
               </div>
               <h3 className="oc-title text-xl font-black">{product.title}</h3>
               <p className="mt-2 text-sm font-bold text-muted">{product.creator}</p>
@@ -490,11 +480,10 @@ export function HomeDiscovery() {
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Commission"
           title="找创作者"
           desc="从服务卡片开始浏览头像、摊宣和周边图案接单，创作者主页承载信任信息。"
           action={
-            <Link href="/commissions" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white px-5 text-sm font-black shadow-soft">
+            <Link href="/commissions" className="dream-btn-secondary">
               查看服务
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
@@ -502,15 +491,17 @@ export function HomeDiscovery() {
         />
         <div className="grid gap-4 md:grid-cols-3">
           {creatorServices.map((service) => (
-            <Link key={service.id} href="/commissions" className="oc-panel rounded-card p-5 transition hover:-translate-y-1">
+            <Link key={service.id} href="/commissions" className="glass-panel glass-panel-hover p-5">
               <div className="flex items-center justify-between gap-3">
                 <span className="grid size-12 place-items-center rounded-pill text-ink" style={{ backgroundColor: service.accent }}>
                   <Store size={19} aria-hidden="true" />
                 </span>
-                <span className="rounded-pill bg-bg px-3 py-1 text-xs font-black text-muted">{service.status}</span>
+                <span className="rounded-pill bg-white/62 px-3 py-1 text-xs font-black text-muted">{service.status}</span>
               </div>
               <h3 className="oc-title mt-5 text-xl font-black">{service.title}</h3>
-              <p className="mt-2 text-sm font-bold text-muted">{service.creator} · {service.priceRange}</p>
+              <p className="mt-2 text-sm font-bold text-muted">
+                {service.creator} / {service.priceRange}
+              </p>
               <p className="mt-3 text-sm leading-6 text-muted">{service.sample}</p>
             </Link>
           ))}
@@ -518,13 +509,12 @@ export function HomeDiscovery() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="oc-panel grid gap-5 rounded-[32px] p-6 md:grid-cols-[1fr_auto] md:items-center md:p-8">
+        <div className="glass-panel grid gap-5 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-8">
           <div>
-            <p className="oc-kicker text-[11px] font-black text-primary">Role Interaction</p>
-            <h2 className="oc-title mt-2 text-3xl font-black">从自己的角色资产开始互动会话</h2>
+            <h2 className="oc-title text-3xl font-black">从自己的角色资产开始互动会话</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">角色互动用于测试口癖、关系动态和场景对话，不做预置陪聊角色池。</p>
           </div>
-          <Link href="/chat" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill bg-ink px-5 text-sm font-black text-white">
+          <Link href="/chat" className="dream-btn-primary">
             <MessageCircle size={17} aria-hidden="true" />
             进入角色互动
           </Link>
@@ -532,14 +522,13 @@ export function HomeDiscovery() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid gap-5 rounded-[32px] bg-ink p-6 text-white shadow-[0_28px_80px_rgba(18,16,22,0.18)] md:grid-cols-[1.4fr_0.6fr] md:p-8">
+        <div className="grid gap-5 rounded-[32px] bg-[linear-gradient(135deg,#3a245e,#9c7cf4_52%,#a9cdfb)] p-6 text-white shadow-[0_28px_80px_rgba(72,48,118,0.22)] md:grid-cols-[1.4fr_0.6fr] md:p-8">
           <div>
-            <p className="oc-kicker text-[11px] font-black text-lime">Pricing Entry</p>
-            <h2 className="oc-title mt-2 text-3xl font-black">先用免费版跑通角色，再按点数升级创作量。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">当前页面只做前端展示，不接支付；商业结构保留免费版、会员、点数和单次项目。</p>
+            <h2 className="oc-title text-3xl font-black">先用免费版跑通角色，再按点数升级创作量。</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/82">当前页面只做前端展示，不接支付；商业结构保留免费版、会员、点数和单次项目。</p>
           </div>
           <div className="flex items-end">
-            <Link href="/pricing" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-pill bg-lime px-5 text-sm font-black text-ink">
+            <Link href="/pricing" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-pill bg-white px-5 text-sm font-black text-[#3a245e] transition hover:-translate-y-1">
               查看定价
               <ArrowRight size={17} aria-hidden="true" />
             </Link>

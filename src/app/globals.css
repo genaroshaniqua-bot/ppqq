@@ -164,6 +164,31 @@ body {
   }
 }
 
+@keyframes studioDrift {
+  0%, 100% {
+    opacity: 0.44;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.76;
+    transform: translate3d(14px, -18px, 0) scale(1.05);
+  }
+}
+
+@keyframes studioPetal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -20px, 0) rotate(0deg);
+  }
+  18% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(42px, 180px, 0) rotate(210deg);
+  }
+}
+
 @keyframes loginImageDrift {
   from {
     transform: scale(1.04) translate3d(-1.2%, -0.6%, 0);
@@ -248,6 +273,125 @@ select {
   text-wrap: balance;
 }
 
+.studio-shell {
+  position: relative;
+  background:
+    radial-gradient(circle at 18% 7%, rgba(240, 160, 208, 0.24), transparent 28rem),
+    radial-gradient(circle at 82% 10%, rgba(142, 184, 240, 0.22), transparent 30rem),
+    radial-gradient(circle at 54% 42%, rgba(232, 213, 163, 0.14), transparent 34rem);
+}
+
+.studio-shell::before {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.72) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(156, 124, 244, 0.2) 0 1px, transparent 1.5px);
+  background-position: 0 0, 34px 28px;
+  background-size: 92px 92px, 128px 128px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 78%);
+}
+
+.studio-hero {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.78), transparent 20rem),
+    radial-gradient(circle at 82% 18%, rgba(240, 160, 208, 0.34), transparent 24rem),
+    radial-gradient(circle at 62% 78%, rgba(142, 184, 240, 0.28), transparent 28rem),
+    linear-gradient(135deg, rgba(255, 248, 252, 0.86), rgba(236, 232, 255, 0.82) 48%, rgba(232, 247, 255, 0.84));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 36px 110px rgba(72, 48, 118, 0.14);
+}
+
+.studio-hero::before,
+.studio-hero::after {
+  pointer-events: none;
+  position: absolute;
+  content: "";
+  border-radius: 999px;
+  filter: blur(4px);
+}
+
+.studio-hero::before {
+  right: 10%;
+  top: 8%;
+  width: 11rem;
+  height: 11rem;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.82), rgba(240, 160, 208, 0.22) 48%, transparent 72%);
+  animation: studioDrift 9s ease-in-out infinite;
+}
+
+.studio-hero::after {
+  bottom: 9%;
+  left: 36%;
+  width: 14rem;
+  height: 14rem;
+  background: radial-gradient(circle, rgba(142, 184, 240, 0.34), transparent 70%);
+  animation: studioDrift 11s ease-in-out infinite reverse;
+}
+
+.studio-particles {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.studio-particles span {
+  position: absolute;
+  display: block;
+  width: 0.75rem;
+  height: 1.1rem;
+  border-radius: 999px 999px 999px 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(240, 160, 208, 0.5));
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.76);
+  animation: studioPetal 12s ease-in-out infinite;
+}
+
+.studio-particles span:nth-child(1) {
+  left: 8%;
+  top: 8%;
+}
+
+.studio-particles span:nth-child(2) {
+  left: 22%;
+  top: 18%;
+  animation-delay: 1.8s;
+  animation-duration: 14s;
+}
+
+.studio-particles span:nth-child(3) {
+  right: 18%;
+  top: 12%;
+  animation-delay: 0.9s;
+}
+
+.studio-particles span:nth-child(4) {
+  right: 9%;
+  top: 38%;
+  animation-delay: 2.7s;
+  animation-duration: 15s;
+}
+
+.studio-particles span:nth-child(5) {
+  left: 52%;
+  top: 4%;
+  animation-delay: 3.6s;
+}
+
+.studio-particles span:nth-child(6) {
+  left: 72%;
+  top: 64%;
+  animation-delay: 4.4s;
+  animation-duration: 16s;
+}
+
 /* ── Glass panel (legacy oc-panel preserved + new glass variant) ── */
 
 .oc-panel {
@@ -262,10 +406,14 @@ select {
 
 .glass-panel {
   border: 1px solid var(--color-glass-border);
-  background: var(--gradient-card);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.24)),
+    var(--gradient-card);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-dream);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    var(--shadow-dream);
   border-radius: var(--radius-card);
 }
 
@@ -410,5 +558,11 @@ select {
 
   .stagger-children > * {
     opacity: 1;
+  }
+
+  .studio-hero::before,
+  .studio-hero::after,
+  .studio-particles span {
+    animation: none !important;
   }
 }
