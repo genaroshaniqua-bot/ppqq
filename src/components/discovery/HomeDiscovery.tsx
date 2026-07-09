@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, BadgeCheck, Bookmark, Heart, Search, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, BadgeCheck, Bookmark, Heart, MessageCircle, Search, ShoppingBag, Sparkles, Store, Wand2 } from "lucide-react";
 import { CharacterCard } from "@/components/character/CharacterCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SwipeRail } from "@/components/ui/SwipeRail";
 import { boothTemplates, creationTemplates, discoveryCategories } from "@/data/mock-generations";
 import { mockCharacters } from "@/data/mock-characters";
+import { creatorServices, marketProducts } from "@/data/mock-platform";
 import { cn } from "@/lib/utils";
 
 const coverCards = [
@@ -38,6 +39,33 @@ const coverCards = [
     badge: "摊主工具",
     credit: "Booth Kit",
     position: "right bottom"
+  },
+  {
+    title: "逛商品",
+    desc: "浏览头像模板、角色卡模板、徽章、立牌和轻量实体周边预览。",
+    href: "/market",
+    image: "/images/case-sheet.png",
+    badge: "商品发现",
+    credit: "Market",
+    position: "center"
+  },
+  {
+    title: "找创作者",
+    desc: "从头像、立绘、摊宣和周边图案服务开始筛选创作者。",
+    href: "/commissions",
+    image: "/images/hero-workbench.png",
+    badge: "接单服务",
+    credit: "Commission",
+    position: "left bottom"
+  },
+  {
+    title: "角色互动",
+    desc: "从自己的角色资产发起场景对话，测试口癖、关系和剧情张力。",
+    href: "/chat",
+    image: "/images/case-sheet.png",
+    badge: "互动会话",
+    credit: "Chat",
+    position: "right top"
   },
   {
     title: "头像提示词套装",
@@ -147,7 +175,7 @@ export function HomeDiscovery() {
 
       <section className="mx-auto max-w-[1920px] px-4 pb-8 sm:px-6 lg:px-8">
         <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <h2 className="font-display text-3xl font-black md:text-4xl">12,000+ 创作模板与角色资产</h2>
+          <h2 className="font-display text-3xl font-black md:text-4xl">12,000+ 创作模板、商品与创作者服务</h2>
           <Link
             href="/create"
             className="inline-flex min-h-12 w-fit items-center justify-center gap-2 rounded-pill bg-white px-5 text-sm font-black shadow-soft transition hover:bg-primary/15"
@@ -250,6 +278,82 @@ export function HomeDiscovery() {
             </Link>
           ))}
         </SwipeRail>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Market"
+          title="逛商品"
+          desc="先用前端 mock 展示数字商品与轻量实体周边预览，愿望单和购物车只做演示状态。"
+          action={
+            <Link href="/market" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white px-5 text-sm font-black shadow-soft">
+              进入逛商品
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          }
+        />
+        <SwipeRail>
+          {marketProducts.map((product) => (
+            <Link key={product.id} href="/market" className="min-w-[260px] snap-start rounded-card border border-line bg-white p-5 shadow-soft transition hover:-translate-y-1">
+              <div className="mb-5 flex items-start justify-between gap-3">
+                <span className="grid size-12 place-items-center rounded-pill text-ink" style={{ backgroundColor: product.accent }}>
+                  <ShoppingBag size={19} aria-hidden="true" />
+                </span>
+                <span className="rounded-pill bg-bg px-3 py-1 text-xs font-black text-muted">{product.kind}</span>
+              </div>
+              <h3 className="font-display text-xl font-black">{product.title}</h3>
+              <p className="mt-2 text-sm font-bold text-muted">{product.creator}</p>
+              <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{product.desc}</p>
+              <div className="mt-5 flex items-center justify-between">
+                <span className="text-lg font-black">¥{product.price}</span>
+                <span className="text-xs font-black text-primary">{product.status}</span>
+              </div>
+            </Link>
+          ))}
+        </SwipeRail>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Commission"
+          title="找创作者"
+          desc="从服务卡片开始浏览头像、摊宣和周边图案接单，创作者主页承载信任信息。"
+          action={
+            <Link href="/commissions" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white px-5 text-sm font-black shadow-soft">
+              查看服务
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          }
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          {creatorServices.map((service) => (
+            <Link key={service.id} href="/commissions" className="rounded-card border border-line bg-white p-5 shadow-soft transition hover:-translate-y-1">
+              <div className="flex items-center justify-between gap-3">
+                <span className="grid size-12 place-items-center rounded-pill text-ink" style={{ backgroundColor: service.accent }}>
+                  <Store size={19} aria-hidden="true" />
+                </span>
+                <span className="rounded-pill bg-bg px-3 py-1 text-xs font-black text-muted">{service.status}</span>
+              </div>
+              <h3 className="mt-5 font-display text-xl font-black">{service.title}</h3>
+              <p className="mt-2 text-sm font-bold text-muted">{service.creator} · {service.priceRange}</p>
+              <p className="mt-3 text-sm leading-6 text-muted">{service.sample}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid gap-5 rounded-[32px] border border-line bg-white p-6 shadow-soft md:grid-cols-[1fr_auto] md:items-center md:p-8">
+          <div>
+            <p className="text-xs font-black uppercase text-primary">Role Interaction</p>
+            <h2 className="mt-2 font-display text-3xl font-black">从自己的角色资产开始互动会话</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">角色互动用于测试口癖、关系动态和场景对话，不做预置陪聊角色池。</p>
+          </div>
+          <Link href="/chat" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill bg-ink px-5 text-sm font-black text-white">
+            <MessageCircle size={17} aria-hidden="true" />
+            进入角色互动
+          </Link>
+        </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">

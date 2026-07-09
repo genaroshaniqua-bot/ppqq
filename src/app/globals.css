@@ -90,6 +90,27 @@ select {
   clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
 }
 
+.login-video-fallback {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(184, 255, 38, 0.26), transparent 22rem),
+    radial-gradient(circle at 72% 22%, rgba(240, 132, 188, 0.34), transparent 24rem),
+    radial-gradient(circle at 50% 78%, rgba(84, 197, 183, 0.34), transparent 28rem),
+    linear-gradient(135deg, #0c090d 0%, #241831 48%, #0a3439 100%);
+  animation: login-pan 7s linear infinite alternate;
+}
+
+@keyframes login-pan {
+  from {
+    transform: scale(1.04) translate3d(-1.2%, -0.8%, 0);
+    filter: saturate(1.05);
+  }
+
+  to {
+    transform: scale(1.08) translate3d(1.2%, 0.8%, 0);
+    filter: saturate(1.2);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

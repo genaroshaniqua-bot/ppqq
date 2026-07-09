@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "AI OC Studio | 二次元 OC 创作工具平台",
   description: "从角色灵感生成 OC 设定、角色卡、头像方向、同人片段、摊宣文案和周边预览方案。",
   icons: {
-    icon: "/favicon.ico"
+    icon: "/favicon.svg"
   }
 };
 
