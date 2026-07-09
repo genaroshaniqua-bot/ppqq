@@ -6,7 +6,7 @@ import { Brush, Home, MessageCircle, ShoppingBag, Store, UserRound } from "lucid
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/", label: "首页", icon: Home },
+  { href: "/home", label: "首页", icon: Home },
   { href: "/create", label: "创作", icon: Brush },
   { href: "/market", label: "逛商品", icon: ShoppingBag },
   { href: "/commissions", label: "找创作者", icon: Store },

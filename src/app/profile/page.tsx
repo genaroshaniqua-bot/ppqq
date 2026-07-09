@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Download, FolderHeart, Heart, History, ReceiptText, Sparkles, UserRound } from "lucide-react";
+import { LoginAppearanceSettings } from "@/components/profile/LoginAppearanceSettings";
 import { accountOrders, commissionRecords, marketProducts } from "@/data/mock-platform";
 import { readCharacters } from "@/lib/storage";
 import type { Character } from "@/types/character";
@@ -106,6 +107,8 @@ export default function ProfilePage() {
           ))}
         </div>
       </section>
+
+      <LoginAppearanceSettings />
     </div>
   );
 }

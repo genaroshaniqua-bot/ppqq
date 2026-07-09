@@ -3,22 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #f8f7f8;
-  --color-text: #0c090d;
-  --color-muted: rgba(12, 9, 13, 0.64);
-  --color-border: #eceaec;
+  --color-bg: #f5f8f7;
+  --color-text: #121016;
+  --color-muted: rgba(18, 16, 22, 0.62);
+  --color-border: #e4e9e7;
   --color-card: #ffffff;
-  --color-primary: #54c5b7;
-  --color-pink: #f084bc;
-  --color-blue: #6283d6;
-  --color-purple: #946cf3;
-  --color-lime: #b8ff26;
+  --color-primary: #32c4b6;
+  --color-pink: #ff7db5;
+  --color-blue: #5f7fe8;
+  --color-purple: #8a6cff;
+  --color-lime: #ccff38;
   --color-danger: #c93a4b;
   --radius-pill: 999px;
-  --radius-card: 20px;
+  --radius-card: 24px;
   --radius-small: 8px;
-  --font-sans: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
-  --font-display: "Noto Serif SC", "Songti SC", "PingFang SC", system-ui, sans-serif;
+  --font-sans: "Inter", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
 }
 
@@ -33,13 +33,50 @@ html {
 body {
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 8% 4%, rgba(84, 197, 183, 0.14), transparent 28rem),
-    radial-gradient(circle at 94% 10%, rgba(240, 132, 188, 0.18), transparent 26rem),
+    radial-gradient(circle at 12% 0%, rgba(50, 196, 182, 0.16), transparent 28rem),
+    radial-gradient(circle at 88% 6%, rgba(255, 125, 181, 0.16), transparent 26rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 248, 247, 0.98) 32rem),
     var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
   letter-spacing: 0;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loginImageDrift {
+  from {
+    transform: scale(1.04) translate3d(-1.2%, -0.6%, 0);
+  }
+
+  to {
+    transform: scale(1.1) translate3d(1.4%, 0.8%, 0);
+  }
+}
+
+@keyframes loginLightDrift {
+  from {
+    opacity: 0.35;
+    transform: translate3d(-3%, 0, 0) scale(1);
+  }
+
+  to {
+    opacity: 0.75;
+    transform: translate3d(4%, 2%, 0) scale(1.12);
+  }
 }
 
 a {
@@ -68,7 +105,7 @@ select {
 }
 
 ::selection {
-  background: rgba(184, 255, 38, 0.6);
+  background: rgba(204, 255, 56, 0.62);
 }
 
 .rail-scroll {
@@ -81,13 +118,48 @@ select {
 
 .surface-grid {
   background-image:
-    linear-gradient(rgba(12, 9, 13, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(12, 9, 13, 0.035) 1px, transparent 1px);
-  background-size: 26px 26px;
+    linear-gradient(rgba(18, 16, 22, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 16, 22, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 .clip-card {
-  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+
+.oc-kicker {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.oc-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.oc-panel {
+  border: 1px solid rgba(18, 16, 22, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.84)),
+    radial-gradient(circle at 12% 0%, rgba(50, 196, 182, 0.08), transparent 18rem);
+  box-shadow: 0 24px 70px rgba(18, 16, 22, 0.08);
+}
+
+.asset-sheen::after {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.32) 38%, transparent 54%);
+  opacity: 0;
+  transform: translateX(-30%);
+  transition: opacity 220ms ease, transform 650ms ease;
+}
+
+.asset-sheen:hover::after {
+  opacity: 1;
+  transform: translateX(30%);
 }
 
 .login-video-fallback {

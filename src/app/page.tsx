@@ -1,5 +1,5 @@
-import { HomeDiscovery } from "@/components/discovery/HomeDiscovery";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return <HomeDiscovery />;
+  redirect("/login");
 }

@@ -23,8 +23,8 @@ const config: Config = {
         small: "var(--radius-small)"
       },
       boxShadow: {
-        soft: "0 18px 50px rgba(12, 9, 13, 0.08)",
-        lift: "0 16px 36px rgba(84, 197, 183, 0.18)"
+        soft: "0 24px 70px rgba(18, 16, 22, 0.08)",
+        lift: "0 18px 42px rgba(50, 196, 182, 0.2)"
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],

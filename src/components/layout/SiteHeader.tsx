@@ -18,19 +18,19 @@ export function SiteHeader() {
   if (pathname === "/login") return null;
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-line/80 bg-bg/86 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-white/70 bg-white/78 backdrop-blur-2xl">
       <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex min-h-11 items-center gap-3 rounded-pill pr-2">
-          <span className="grid size-11 place-items-center rounded-pill bg-ink text-lime shadow-soft">
+        <Link href="/home" className="flex min-h-11 items-center gap-3 rounded-pill pr-2">
+          <span className="grid size-11 place-items-center rounded-pill bg-ink text-lime shadow-[0_14px_32px_rgba(18,16,22,0.18)]">
             <Sparkles size={22} aria-hidden="true" />
           </span>
           <span className="leading-tight">
-            <span className="block font-display text-lg font-black">AI OC Studio</span>
-            <span className="hidden text-xs font-semibold text-muted sm:block">二次元 OC 综合平台</span>
+            <span className="block font-display text-lg font-black tracking-[-0.01em]">AI OC Studio</span>
+            <span className="hidden text-xs font-bold text-muted sm:block">角色资产创作平台</span>
           </span>
         </Link>
 
-        <nav aria-label="主导航" className="ml-auto hidden items-center rounded-pill bg-white p-1 shadow-soft md:flex">
+        <nav aria-label="主导航" className="ml-auto hidden items-center rounded-pill border border-line/70 bg-white/88 p-1 shadow-soft md:flex">
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
@@ -38,8 +38,8 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "min-h-11 rounded-pill px-4 py-3 text-sm font-bold text-muted transition hover:bg-bg hover:text-ink",
-                  active && "bg-ink text-white hover:bg-ink hover:text-white"
+                  "min-h-11 rounded-pill px-4 py-3 text-sm font-black text-muted transition hover:bg-bg hover:text-ink",
+                  active && "bg-ink text-white shadow-[0_10px_24px_rgba(18,16,22,0.16)] hover:bg-ink hover:text-white"
                 )}
                 aria-current={active ? "page" : undefined}
               >
@@ -53,7 +53,7 @@ export function SiteHeader() {
           <Link
             href="/login"
             className={cn(
-              "hidden size-11 place-items-center rounded-pill bg-white text-ink shadow-soft transition hover:bg-primary/15 sm:grid",
+              "hidden size-11 place-items-center rounded-pill border border-line/70 bg-white text-ink shadow-soft transition hover:bg-primary/15 sm:grid",
               pathname === "/login" && "bg-ink text-white hover:bg-ink"
             )}
             aria-label="打开登录界面"
@@ -63,7 +63,7 @@ export function SiteHeader() {
           <Link
             href="/profile"
             className={cn(
-              "grid size-11 place-items-center rounded-pill bg-white text-ink shadow-soft transition hover:bg-primary/15",
+              "grid size-11 place-items-center rounded-pill border border-line/70 bg-white text-ink shadow-soft transition hover:bg-primary/15",
               pathname === "/profile" && "bg-ink text-white hover:bg-ink"
             )}
             aria-label="打开我的"
