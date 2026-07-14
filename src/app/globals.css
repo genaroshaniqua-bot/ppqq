@@ -50,7 +50,65 @@
   /* ── Fonts ── */
   --font-sans: "Inter", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-display: "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-brand: "Arial Rounded MT Bold", "Comic Sans MS", "Segoe Print", sans-serif;
   --font-mono: "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+}
+
+.brand-wordmark {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.015em;
+  padding: 0 0.06em 0.16em;
+  font-family: var(--font-brand);
+  font-weight: 800;
+  font-style: normal;
+  line-height: 0.92;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  text-rendering: geometricPrecision;
+}
+
+.brand-wordmark::after {
+  position: absolute;
+  right: -0.04em;
+  bottom: 0;
+  left: 0.18em;
+  z-index: -1;
+  height: 0.105em;
+  border-radius: 999px;
+  background: var(--color-lime);
+  clip-path: polygon(0 38%, 88% 0, 100% 48%, 89% 78%, 8% 100%);
+  content: "";
+  opacity: 0.92;
+  transform: rotate(-2.5deg);
+  transform-origin: left center;
+}
+
+.brand-wordmark__lead,
+.brand-wordmark__tail {
+  position: relative;
+  display: inline-block;
+  transform-origin: 50% 82%;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.brand-wordmark__lead {
+  transform: translateY(0.025em) rotate(-2deg);
+}
+
+.brand-wordmark__tail {
+  z-index: 1;
+  transform: translateY(-0.02em) rotate(1deg) scale(1.015);
+}
+
+a:hover .brand-wordmark__lead {
+  transform: translateY(-0.015em) rotate(-3deg) scale(1.015);
+}
+
+a:hover .brand-wordmark__tail {
+  transform: translateY(-0.055em) rotate(1.8deg) scale(1.035);
 }
 
 * {

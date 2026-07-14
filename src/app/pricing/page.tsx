@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { Check, Coins, Sparkles } from "lucide-react";
 import { pricingPlans } from "@/data/mock-generations";
+import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
 
 export default function PricingPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="mb-8 rounded-[36px] bg-ink p-6 text-white shadow-soft md:p-10">
-        <p className="text-xs font-black uppercase text-lime">Pricing</p>
-        <h1 className="mt-3 max-w-3xl font-display text-4xl font-black md:text-6xl">按创作量升级，不把前端原型做成支付系统。</h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-white/72">当前阶段只展示商业模式：免费版、会员、点数、单次项目。后续再接真实登录、支付和点数消耗。</p>
+      <section className="mb-8 grid gap-7 rounded-[36px] bg-ink p-6 text-white shadow-soft md:p-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-center">
+        <div><p className="text-xs font-black uppercase text-lime">Pricing</p>
+          <h1 className="mt-3 max-w-3xl font-display text-4xl font-black md:text-6xl">按创作量选择合适的会员方案。</h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-white/72">当前会员与点数用于展示权益结构；商品和委托交易统一采用模拟支付，不会连接银行卡或第三方支付渠道。</p>
+        </div>
+        <FeatureArtPanel src="/images/pricing-membership-studio.png" alt="阳光工作室里使用数位屏创作原创角色的画师" eyebrow="会员创作空间" caption="让持续生成、保存和导出围绕同一份角色资产发生" className="min-h-[230px]" />
       </section>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -33,7 +36,7 @@ export default function PricingPage() {
               ))}
             </ul>
             <Link
-              href="/create"
+              href="/studio"
               className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-pill px-5 text-sm font-black transition ${
                 index === 2 ? "bg-ink text-white hover:bg-primary hover:text-ink" : "bg-bg text-ink hover:bg-primary/15"
               }`}

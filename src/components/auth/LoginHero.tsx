@@ -3,12 +3,16 @@
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, LoaderCircle, LockKeyhole, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, Brush, LoaderCircle, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { BrandMark } from "@/components/brand/BrandMark";
+import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import {
   DEFAULT_LOGIN_APPEARANCE,
   readCustomLoginBackground,
   readLoginAppearance
 } from "@/lib/login-appearance";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { ROLE_WORKSPACE_STORAGE_KEY, type WorkspaceRole } from "@/lib/auth/roles";
 
 const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4";
@@ -17,10 +21,15 @@ export function LoginHero() {
   const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [entryRole, setEntryRole] = useState<WorkspaceRole>("user");
+  const [authMessage, setAuthMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [appearance, setAppearance] = useState(DEFAULT_LOGIN_APPEARANCE);
   const [customBackground, setCustomBackground] = useState<{ url: string; type: string } | null>(null);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("reason") === "suspended") {
+      setAuthMessage({ type: "error", text: "此账户已被管理员暂停，请联系平台处理。" });
+    }
     const savedAppearance = readLoginAppearance();
     if (savedAppearance !== "custom") {
       setAppearance(savedAppearance);
@@ -47,10 +56,78 @@ export function LoginHero() {
     };
   }, []);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSigningIn(true);
-    window.setTimeout(() => router.push("/home"), 700);
+    setAuthMessage(null);
+
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "").trim();
+    const password = String(form.get("password") ?? "");
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+
+      if (mode === "register") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { display_name: email.split("@")[0] } }
+        });
+        if (error) throw error;
+
+        if (!data.session) {
+          setAuthMessage({ type: "success", text: "注册成功，请前往邮箱完成验证后登录。" });
+          return;
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("登录状态未建立，请重试。");
+
+      if (mode === "register" && entryRole === "artist") {
+        await supabase.from("artist_profiles").upsert({
+          user_id: user.id,
+          review_status: "draft",
+          availability: "open"
+        }, { onConflict: "user_id" });
+      }
+
+      const [{ data: profile }, { data: artist }] = await Promise.all([
+        supabase.from("profiles").select("role, account_status").eq("id", user.id).single(),
+        supabase.from("artist_profiles").select("review_status").eq("user_id", user.id).maybeSingle()
+      ]);
+
+      if (profile?.account_status === "suspended") {
+        await supabase.auth.signOut();
+        throw new Error("此账户已被管理员暂停，请联系平台处理。");
+      }
+
+      if (profile?.role === "admin") {
+        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
+        router.push("/admin");
+      } else if (entryRole === "artist" && profile?.role === "artist" && artist?.review_status === "approved") {
+        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "artist");
+        router.push("/artist");
+      } else if (entryRole === "artist") {
+        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
+        router.push("/profile?apply=artist");
+      } else {
+        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
+        router.push("/home");
+      }
+      router.refresh();
+    } catch (error) {
+      setAuthMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "认证失败，请稍后重试。"
+      });
+    } finally {
+      setIsSigningIn(false);
+    }
   }
 
   return (
@@ -108,26 +185,25 @@ export function LoginHero() {
 
       <div className="relative z-10 flex min-h-dvh flex-col px-6 pb-8 pt-7 sm:px-8 sm:pb-10 md:px-12 md:pb-12 lg:px-16">
         <div className="flex items-center gap-3 animate-[fadeSlideUp_0.8s_ease_0.1s_both]">
-          <span className="grid size-11 place-items-center rounded-full bg-white text-black shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
-            <Sparkles size={20} aria-hidden="true" />
+          <span className="grid size-14 shrink-0 place-items-center rounded-[16px] bg-white shadow-[0_14px_32px_rgba(0,0,0,0.24)]">
+            <BrandMark className="h-12 w-11" />
           </span>
-          <span className="text-lg font-black tracking-[-0.01em] sm:text-xl">AI OC Studio</span>
+          <span className="leading-none">
+            <BrandWordmark className="text-[1.8rem] text-white sm:text-[2rem]" />
+            <span className="mt-2 block font-mono text-[8px] font-bold tracking-[0.24em] text-white/48">ORIGINAL CHARACTER PLATFORM</span>
+          </span>
         </div>
 
-        <div className="grid min-h-0 flex-1 items-end gap-8 pb-1 pt-8 md:grid-cols-[minmax(0,1fr)_minmax(320px,430px)] md:gap-12">
-          <div className="self-center md:self-end md:pb-4">
-            <p className="oc-kicker mb-4 text-[11px] font-black text-lime drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)] animate-[fadeSlideUp_0.8s_ease_0.2s_both] sm:mb-6">
+        <div className="grid min-h-0 flex-1 items-end gap-8 pb-1 pt-8 md:grid-cols-[minmax(0,0.92fr)_minmax(320px,430px)] md:gap-12">
+          <div className="self-center md:self-end md:pb-8">
+            <p className="oc-kicker mb-3 text-[11px] font-black text-lime drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)] animate-[fadeSlideUp_0.8s_ease_0.2s_both] sm:mb-4">
               AI 创作 · 角色资产 · 交易发现
             </p>
-            <h1 className="oc-title max-w-4xl text-4xl font-black leading-[1.02] text-white drop-shadow-[0_8px_28px_rgba(0,0,0,0.72)] animate-[fadeSlideUp_0.8s_ease_0.4s_both] sm:text-5xl md:text-6xl lg:text-7xl">
-              塑造角色，
-              <br />
-              延展故事，
-              <br />
-              让每个 OC 真正鲜活。
+            <h1 className="oc-title max-w-3xl text-3xl font-black leading-[1.08] text-white drop-shadow-[0_8px_28px_rgba(0,0,0,0.72)] animate-[fadeSlideUp_0.8s_ease_0.4s_both] sm:text-4xl md:text-5xl lg:text-6xl">
+              让未命名的灵感，长成完整角色
             </h1>
-            <p className="mt-5 hidden max-w-lg text-sm font-semibold leading-relaxed text-white/78 drop-shadow-[0_3px_16px_rgba(0,0,0,0.72)] animate-[fadeSlideUp_0.8s_ease_0.7s_both] sm:block md:text-base">
-              登录后继续管理角色卡、剧情片段、愿望单、订单演示和委托记录。
+            <p className="mt-4 hidden max-w-xl text-sm font-semibold leading-7 text-white/78 drop-shadow-[0_3px_16px_rgba(0,0,0,0.72)] animate-[fadeSlideUp_0.8s_ease_0.7s_both] sm:block md:text-base">
+              登录后继续管理角色设定、剧情片段、商品订单和真实委托记录。
             </p>
           </div>
 
@@ -152,6 +228,43 @@ export function LoginHero() {
               <p className="text-xs font-bold text-white/60">{mode === "login" ? "欢迎回来" : "创建演示账号"}</p>
               <h2 className="oc-title mt-1 text-2xl font-black">{mode === "login" ? "登录创作工作台" : "注册并进入平台"}</h2>
             </div>
+
+            <fieldset className="mb-5">
+              <legend className="text-xs font-black text-white/72">本次使用身份</legend>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {([
+                  { role: "user" as const, label: "个人用户", desc: "创作与购买", icon: UserRound },
+                  { role: "artist" as const, label: "画师", desc: "接单与经营", icon: Brush }
+                ]).map((item) => {
+                  const Icon = item.icon;
+                  const selected = entryRole === item.role;
+                  return (
+                    <button
+                      key={item.role}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setEntryRole(item.role)}
+                      className={`flex min-h-16 items-center gap-3 rounded-[16px] border px-3 text-left transition ${
+                        selected
+                          ? "border-lime bg-lime text-black shadow-[0_12px_28px_rgba(184,255,38,0.16)]"
+                          : "border-white/18 bg-white/[0.06] text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${selected ? "bg-black text-lime" : "bg-white/10"}`}>
+                        <Icon size={17} aria-hidden="true" />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-black">{item.label}</span>
+                        <span className={`block text-[11px] font-bold ${selected ? "text-black/58" : "text-white/50"}`}>{item.desc}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11px] font-semibold leading-5 text-white/48">
+                管理员使用普通入口登录，系统会自动识别权限。
+              </p>
+            </fieldset>
 
             <label className="block text-xs font-black text-white/72" htmlFor="login-email">
               邮箱
@@ -204,7 +317,20 @@ export function LoginHero() {
               )}
             </button>
 
-            <p className="mt-4 text-center text-xs text-white/50">当前为前端演示，输入任意有效邮箱和至少 6 位密码即可继续。</p>
+            {authMessage ? (
+              <p
+                role="status"
+                className={`mt-4 rounded-[14px] border px-3 py-2 text-xs font-bold leading-5 ${
+                  authMessage.type === "error"
+                    ? "border-red-300/35 bg-red-400/15 text-red-100"
+                    : "border-lime/35 bg-lime/15 text-lime"
+                }`}
+              >
+                {authMessage.text}
+              </p>
+            ) : null}
+
+            <p className="mt-4 text-center text-xs text-white/50">使用邮箱和密码登录。首次注册可能需要完成邮箱验证。</p>
           </form>
         </div>
       </div>

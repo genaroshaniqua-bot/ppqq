@@ -3,6 +3,11 @@ node_modules
 out
 dist
 .env*
+!.env.example
 *.log
 coverage
 tsconfig.tsbuildinfo
+.codex/
+artifacts/
+outputs/
+design-qa.md

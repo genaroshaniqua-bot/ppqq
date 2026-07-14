@@ -19,15 +19,48 @@ export type MarketProduct = {
 
 export type CommissionStatus = "可接单" | "排队中" | "暂停接单";
 
+export type CommissionCategory =
+  | "角色插画"
+  | "2D 头像 / Live2D"
+  | "3D 模型"
+  | "表情 / 徽章"
+  | "直播素材"
+  | "品牌 / 平面"
+  | "动画 / 视频"
+  | "音乐 / 音频"
+  | "文案 / 剧情"
+  | "实体周边"
+  | "创作咨询"
+  | "其他";
+
+export type CommissionLicense = "个人使用" | "商业使用" | "版权买断";
+
+export type CommissionServiceOption = "可加急" | "含源文件" | "过程确认" | "可追加差分";
+
+export type CommissionCategoryMeta = {
+  id: string;
+  label: CommissionCategory;
+  description: string;
+  accent: string;
+  icon: string;
+};
+
 export type CreatorService = {
   id: string;
   title: string;
-  category: string;
+  category: CommissionCategory;
   creator: string;
   status: CommissionStatus;
   priceRange: string;
+  priceFrom: number;
   turnaround: string;
   tags: string[];
+  licenses: CommissionLicense[];
+  serviceOptions: CommissionServiceOption[];
+  verified: boolean;
+  onSale: boolean;
+  rating: number;
+  reviewCount: number;
   sample: string;
   rules: string[];
   accent: string;

@@ -79,7 +79,7 @@ export default function CharacterDetailPage() {
           <section className="overflow-hidden rounded-[32px] border border-line bg-white shadow-soft">
             <div className="relative h-64">
               <Image
-                src="/images/case-sheet.png"
+                src="/images/artwork/pink-fish.jpg"
                 alt={`${character.name} 的详情视觉`}
                 fill
                 sizes="(max-width: 1024px) 100vw, 55vw"
