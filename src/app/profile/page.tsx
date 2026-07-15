@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Bell, Crown, FolderHeart, Heart, Palette, ReceiptText, Settings2, Sparkles } from "lucide-react";
 import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { ProfileBackendStats } from "@/components/profile/ProfileBackendStats";
+import { CreditBalance } from "@/components/profile/CreditBalance";
 import { readCharacters } from "@/lib/storage";
 import type { Character } from "@/types/character";
 
@@ -46,7 +47,7 @@ export default function ProfilePage() {
               <span className="inline-flex items-center gap-2 rounded-pill bg-white/10 px-3 py-2 text-xs font-black"><Crown size={15} />基础会员</span>
             </div>
             <div className="mt-7 grid grid-cols-2 gap-3">
-              <div><p className="text-xs font-bold text-white/50">点数余额</p><p className="mt-1 font-display text-3xl font-black">620</p></div>
+              <div><p className="text-xs font-bold text-white/50">点数余额</p><p className="mt-1 font-display text-3xl font-black"><CreditBalance /></p></div>
               <div><p className="text-xs font-bold text-white/50">未读通知</p><p className="mt-1 font-display text-3xl font-black"><NotificationBadge compact /></p></div>
             </div>
             <Link href="/pricing" className="mt-6 flex min-h-11 items-center justify-between rounded-pill bg-white px-4 text-sm font-black text-ink">查看会员权益<ArrowRight size={16} /></Link>

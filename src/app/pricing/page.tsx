@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Check, Coins, Sparkles } from "lucide-react";
 import { pricingPlans } from "@/data/mock-generations";
 import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
+import { PricingPurchasePanel } from "@/components/pricing/PricingPurchasePanel";
 
 export default function PricingPage() {
   return (
@@ -14,38 +13,7 @@ export default function PricingPage() {
         <FeatureArtPanel src="/images/pricing-membership-studio.png" alt="阳光工作室里使用数位屏创作原创角色的画师" eyebrow="会员创作空间" caption="让持续生成、保存和导出围绕同一份角色资产发生" className="min-h-[230px]" />
       </section>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {pricingPlans.map((plan, index) => (
-          <article key={plan.name} className={`rounded-card border border-line bg-white p-5 shadow-soft ${index === 2 ? "ring-4 ring-primary/30" : ""}`}>
-            <div className="mb-5 flex items-start justify-between gap-3">
-              <div>
-                <h2 className="font-display text-2xl font-black">{plan.name}</h2>
-                <p className="mt-1 text-sm font-semibold text-muted">{plan.desc}</p>
-              </div>
-              <span className={`grid size-11 place-items-center rounded-pill ${index === 2 ? "bg-lime" : "bg-bg"}`}>
-                {index === 2 ? <Sparkles size={19} aria-hidden="true" /> : <Coins size={19} aria-hidden="true" />}
-              </span>
-            </div>
-            <p className="font-display text-4xl font-black">{plan.price}</p>
-            <ul className="mt-6 space-y-3">
-              {plan.features.map((feature) => (
-                <li key={feature} className="flex gap-3 text-sm font-semibold leading-6 text-muted">
-                  <Check className="mt-0.5 shrink-0 text-primary" size={17} aria-hidden="true" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/studio"
-              className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-pill px-5 text-sm font-black transition ${
-                index === 2 ? "bg-ink text-white hover:bg-primary hover:text-ink" : "bg-bg text-ink hover:bg-primary/15"
-              }`}
-            >
-              进入创作
-            </Link>
-          </article>
-        ))}
-      </section>
+      <PricingPurchasePanel plans={pricingPlans} />
 
       <section className="mt-8 grid gap-5 md:grid-cols-3">
         {[
