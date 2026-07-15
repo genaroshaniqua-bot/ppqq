@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Brush, Crown, LayoutDashboard, LogIn, Search, ShieldCheck, UserRound } from "lucide-react";
+import { Bell, Brush, Crown, LayoutDashboard, Search, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { UserAvatar } from "@/components/profile/UserAvatar";
 import { useRoleWorkspace } from "@/components/auth/RoleWorkspaceProvider";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 const marketplaceNavItems = [
   { href: "/home", label: "首页" },
@@ -94,9 +95,7 @@ export function SiteHeader() {
                 <ShieldCheck size={16} aria-hidden="true" />管理台
               </Link>
             ) : null}
-            <Link href="/login" className="hidden size-11 place-items-center rounded-pill border border-line/70 bg-white text-ink shadow-soft transition hover:bg-primary/15 sm:grid" aria-label="打开登录界面">
-              <LogIn size={19} aria-hidden="true" />
-            </Link>
+            <SignOutButton compact />
             <Link href="/profile" className="grid size-11 place-items-center rounded-full bg-ink text-white shadow-soft" aria-label="打开我的" aria-current="page">
               <UserAvatar src={avatarUrl} name={displayName} className="size-11" />
             </Link>

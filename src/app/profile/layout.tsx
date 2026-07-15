@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ProfileHubNav } from "@/components/profile/ProfileHubNav";
 
 export const metadata: Metadata = {
   title: "WEIMING | 我的平台资产",
@@ -13,5 +14,5 @@ export default async function ProfileLayout({ children }: Readonly<{ children: R
   if (!user) redirect("/login");
   const { data: profile } = await supabase.from("profiles").select("account_status").eq("id", user.id).single();
   if (profile?.account_status === "suspended") redirect("/login?reason=suspended");
-  return children;
+  return <><ProfileHubNav />{children}</>;
 }

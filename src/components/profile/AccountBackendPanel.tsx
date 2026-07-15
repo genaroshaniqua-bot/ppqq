@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BadgeCheck, Brush, ImageUp, LoaderCircle, LogOut, Save, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { ArrowRight, BadgeCheck, Brush, ImageUp, LoaderCircle, Save, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useRoleWorkspace } from "@/components/auth/RoleWorkspaceProvider";
 import type { WorkspaceRole } from "@/lib/auth/roles";
 import { UserAvatar } from "@/components/profile/UserAvatar";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 type Profile = {
   id: string;
@@ -32,7 +33,7 @@ const reviewLabels: Record<ArtistProfile["review_status"], string> = {
   rejected: "审核未通过"
 };
 
-export function AccountBackendPanel() {
+export function AccountBackendPanel({ section = "all" }: { section?: "all" | "account" | "artist" }) {
   const router = useRouter();
   const { workspace, artistWorkspaceAvailable, switchWorkspace, refreshRole } = useRoleWorkspace();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -230,13 +231,6 @@ export function AccountBackendPanel() {
     router.push(nextWorkspace === "artist" ? "/artist" : "/home");
   }
 
-  async function signOut() {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
-  }
-
   if (loading) {
     return <section className="mb-8 flex min-h-40 items-center justify-center rounded-card border border-line bg-white shadow-soft"><LoaderCircle className="animate-spin text-primary" /></section>;
   }
@@ -247,7 +241,7 @@ export function AccountBackendPanel() {
 
   return (
     <section className="mb-8 grid gap-6 lg:grid-cols-2">
-      <article className="overflow-hidden rounded-[28px] border border-line bg-ink p-5 text-white shadow-soft sm:p-6 lg:col-span-2">
+      {section !== "artist" ? <article className="overflow-hidden rounded-[28px] border border-line bg-ink p-5 text-white shadow-soft sm:p-6 lg:col-span-2">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-xl">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-lime">Workspace identity</p>
@@ -288,9 +282,9 @@ export function AccountBackendPanel() {
             })}
           </div>
         </div>
-      </article>
+      </article> : null}
 
-      <form onSubmit={saveProfile} className="rounded-card border border-line bg-white p-5 shadow-soft sm:p-6">
+      {section !== "artist" ? <form onSubmit={saveProfile} className="rounded-card border border-line bg-white p-5 shadow-soft sm:p-6 lg:col-span-2">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-wider text-primary">Supabase Account</p>
@@ -330,12 +324,12 @@ export function AccountBackendPanel() {
         <textarea id="profile-bio" name="bio" defaultValue={profile.bio ?? ""} rows={4} className="mt-2 w-full rounded-[16px] border border-line bg-bg p-4 text-sm font-semibold outline-none focus:border-primary" />
         <div className="mt-5 flex flex-wrap gap-3">
           <Button type="submit" disabled={saving}><Save size={16} />保存资料</Button>
-          <Button type="button" variant="secondary" onClick={signOut}><LogOut size={16} />退出登录</Button>
+          <SignOutButton />
           {profile.role === "admin" ? <Link href="/admin/artists" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-lime px-5 py-3 text-sm font-black text-ink"><ShieldCheck size={16} />画师审核</Link> : null}
         </div>
-      </form>
+      </form> : null}
 
-      <form onSubmit={submitArtistApplication} className="rounded-card border border-line bg-white p-5 shadow-soft sm:p-6">
+      {section !== "account" ? <form onSubmit={submitArtistApplication} className="rounded-card border border-line bg-white p-5 shadow-soft sm:p-6 lg:col-span-2">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-wider text-purple">Artist Onboarding</p>
@@ -348,7 +342,7 @@ export function AccountBackendPanel() {
         <label className="mt-4 block text-sm font-black" htmlFor="artist-introduction">入驻介绍</label>
         <textarea id="artist-introduction" name="introduction" required minLength={20} defaultValue={artist?.introduction ?? ""} rows={4} placeholder="介绍你的画风、擅长内容、接单规则和经验。" className="mt-2 w-full rounded-[16px] border border-line bg-bg p-4 text-sm font-semibold outline-none focus:border-purple" />
         <Button type="submit" disabled={saving || artist?.review_status === "approved"} className="mt-5"><Brush size={16} />{artist ? "更新并重新提交" : "提交入驻申请"}</Button>
-      </form>
+      </form> : null}
 
       {message ? <p role="status" className="lg:col-span-2 rounded-pill bg-ink px-5 py-3 text-center text-sm font-black text-white">{message}</p> : null}
     </section>
