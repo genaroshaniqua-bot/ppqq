@@ -200,7 +200,7 @@ export function LoginHero() {
               AI 创作 · 角色资产 · 交易发现
             </p>
             <h1 className="oc-title max-w-3xl text-3xl font-black leading-[1.08] text-white drop-shadow-[0_8px_28px_rgba(0,0,0,0.72)] animate-[fadeSlideUp_0.8s_ease_0.4s_both] sm:text-4xl md:text-5xl lg:text-6xl">
-              让未命名的灵感，长成完整角色
+              让未命名的想象，拥有被世界记住的形状
             </h1>
             <p className="mt-4 hidden max-w-xl text-sm font-semibold leading-7 text-white/78 drop-shadow-[0_3px_16px_rgba(0,0,0,0.72)] animate-[fadeSlideUp_0.8s_ease_0.7s_both] sm:block md:text-base">
               登录后继续管理角色设定、剧情片段、商品订单和真实委托记录。
