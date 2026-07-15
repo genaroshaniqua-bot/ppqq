@@ -11,3 +11,5 @@ tsconfig.tsbuildinfo
 artifacts/
 outputs/
 design-qa.md
+.vercel
+supabase/.temp/
