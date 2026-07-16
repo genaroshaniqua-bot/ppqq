@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Coins, FileText, Images, Save, Send, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Coins, FileText, Globe2, Images, LoaderCircle, Save, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
 import { Toast } from "@/components/ui/Toast";
 import { COMMISSION_DRAFT_STORAGE_KEY, type CommissionDraft } from "@/lib/commission-draft";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const requestCategories = ["OC 头像", "角色立绘", "Live2D", "表情 / 徽章", "摊宣 / 周边", "文案 / 剧情"];
 const licenseOptions = ["个人使用", "商业使用", "版权买断"];
 const requestRequirements = ["需要过程确认", "可接受 AI 辅助说明", "需要源文件", "可分阶段付款"];
-const budgetOptions = ["¥100 - ¥300", "¥200 - ¥500", "¥500 - ¥1,000", "¥1,000 以上"];
+const budgetOptions = ["¥100 - ¥300", "¥200 - ¥500", "¥500 - ¥1,000", "¥1,000 - ¥2,999", "¥3,000 - ¥5,000", "¥5,000 - ¥10,000"];
 
 export default function CreatePage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function CreatePage() {
   const [requestDeadline, setRequestDeadline] = useState("两周内");
   const [requestLicense, setRequestLicense] = useState(licenseOptions[0]);
   const [requirements, setRequirements] = useState<string[]>(["需要过程确认"]);
+  const [collectionDays, setCollectionDays] = useState(7);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (!toast) return;
@@ -111,6 +114,35 @@ export default function CreatePage() {
     router.push("/profile/commissions?draft=1");
   }
 
+  async function publishPublicRequest() {
+    const draft = getDraft();
+    if (!draft) return;
+    setPublishing(true);
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + (requestDeadline === "一周内" ? 7 : requestDeadline === "两周内" ? 14 : requestDeadline === "一个月内" ? 30 : 30));
+    const usageScope = requestLicense === "个人使用" ? "personal" : requestLicense === "版权买断" ? "buyout" : "commercial";
+    const { data, error } = await createSupabaseBrowserClient().rpc("publish_public_commission", {
+      request_title: draft.title,
+      request_brief: `${draft.brief}\n\n合作偏好：${requirements.join("、") || "无"}`,
+      request_service_type: requestCategory,
+      request_budget_min: draft.budgetMin,
+      request_budget_max: draft.budgetMax,
+      request_deadline: deadline.toISOString().slice(0, 10),
+      request_usage_scope: usageScope,
+      request_collection_days: collectionDays,
+      request_allow_public_display: false,
+      request_allow_ai_training: requirements.includes("可接受 AI 辅助说明")
+    });
+    setPublishing(false);
+    if (error) {
+      setToast(error.message.includes("publish_public_commission") ? "公开需求服务尚未初始化，请稍后重试" : error.message);
+      return;
+    }
+    window.localStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+    setToast(draft.budgetMax >= 3000 || usageScope !== "personal" ? "需求已提交，等待管理员审核" : "需求已通过自动检查并公开发布");
+    window.setTimeout(() => router.push(`/profile/commissions?public=${data}`), 900);
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[28px] border border-white/75 bg-white/76 p-4 shadow-soft backdrop-blur-xl">
@@ -171,13 +203,15 @@ export default function CreatePage() {
               <label className="text-sm font-black">授权范围<select value={requestLicense} onChange={(event) => setRequestLicense(event.target.value)} className="mt-2 min-h-12 w-full rounded-pill border border-line bg-bg px-4 text-sm font-bold outline-none focus:border-primary">{licenseOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
             </div>
 
+            <label className="text-sm font-black">公开征集时间<select value={collectionDays} onChange={(event) => setCollectionDays(Number(event.target.value))} className="mt-2 min-h-12 w-full rounded-pill border border-line bg-bg px-4 text-sm font-bold outline-none focus:border-primary"><option value={3}>3 天</option><option value={7}>7 天（推荐）</option><option value={14}>14 天</option></select><span className="mt-2 block text-xs font-semibold text-muted">画师提交的报价默认保留 72 小时。</span></label>
+
             <fieldset>
               <legend className="text-sm font-black">合作偏好</legend>
               <div className="mt-2 flex flex-wrap gap-2">{requestRequirements.map((requirement) => { const selected = requirements.includes(requirement); return <button key={requirement} type="button" onClick={() => toggleRequirement(requirement)} className={`min-h-10 rounded-pill border px-4 text-sm font-bold transition ${selected ? "border-primary bg-primary/15 text-ink" : "border-line bg-white text-muted hover:border-primary/50"}`}>{selected ? <CheckCircle2 size={15} className="mr-1 inline" aria-hidden="true" /> : null}{requirement}</button>; })}</div>
             </fieldset>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5"><Button type="button" variant="secondary" onClick={saveDraft}><Save size={16} aria-hidden="true" />保存草稿</Button><Button type="submit"><Send size={16} aria-hidden="true" />匹配真实服务</Button></div>
+          <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5"><Button type="button" variant="secondary" onClick={saveDraft}><Save size={16} aria-hidden="true" />保存草稿</Button><Button type="submit"><Send size={16} aria-hidden="true" />匹配指定服务</Button><Button type="button" disabled={publishing} onClick={publishPublicRequest} className="bg-lime text-ink hover:bg-primary"><Globe2 size={16} aria-hidden="true" />{publishing ? <><LoaderCircle size={15} className="animate-spin" />正在发布</> : "公开征集画师"}</Button></div>
         </form>
 
         <aside id="request-preview" className="scroll-mt-28 h-fit rounded-card border border-line bg-white p-5 shadow-soft lg:sticky lg:top-24">
@@ -190,7 +224,7 @@ export default function CreatePage() {
             <div className="mt-4 flex flex-wrap gap-2">{requirements.map((item) => <span key={item} className="rounded-pill bg-white px-3 py-1 text-xs font-bold text-muted">{item}</span>)}</div>
           </div>
           <Link href="/characters" className="mt-4 flex min-h-16 w-full items-center justify-center gap-3 rounded-[18px] border border-dashed border-line bg-white text-sm font-black text-muted transition hover:border-primary hover:text-ink"><Images size={18} aria-hidden="true" />查看已保存角色卡</Link>
-          <p className="mt-4 rounded-[16px] bg-primary/12 p-3 text-sm font-bold text-ink">草稿不会直接创建订单；选择真实服务并提交后，画师才能报价。</p>
+          <p className="mt-4 rounded-[16px] bg-primary/12 p-3 text-sm font-bold text-ink">可匹配指定画师服务，也可公开征集多个方案；最终选定一名画师后才生成正式订单。</p>
         </aside>
       </section>
       <Toast message={toast} />

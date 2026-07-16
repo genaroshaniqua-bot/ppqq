@@ -32,6 +32,7 @@ const adminNavItems = [
   { href: "/admin", label: "管理总览" },
   { href: "/admin/users", label: "用户权限" },
   { href: "/admin/services", label: "服务审核" },
+  { href: "/admin/requests", label: "需求审核" },
   { href: "/admin/disputes", label: "委托争议" },
   { href: "/admin/shop", label: "商品订单" },
   { href: "/admin/audit", label: "审计" }

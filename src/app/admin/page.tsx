@@ -5,10 +5,10 @@ import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
 
 export default async function AdminDashboardPage() {
   const supabase = await createSupabaseServerClient();
-  const [users, pendingArtists, services, products, commissionOrders, shopOrders, disputes] = await Promise.all([
+  const [users, pendingArtists, pendingRequests, products, commissionOrders, shopOrders, disputes] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("artist_profiles").select("user_id", { count: "exact", head: true }).eq("review_status", "pending"),
-    supabase.from("artist_services").select("id", { count: "exact", head: true }).eq("is_active", true),
+    supabase.from("commission_requests").select("id", { count: "exact", head: true }).eq("request_mode", "public").eq("moderation_status", "pending_review"),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("commission_orders").select("id", { count: "exact", head: true }),
     supabase.from("shop_orders").select("id", { count: "exact", head: true }),
@@ -16,9 +16,9 @@ export default async function AdminDashboardPage() {
   ]);
 
   const riskQueue = [
+    { href: "/admin/requests", label: "公开需求审核", value: pendingRequests.count ?? 0, detail: "处理高金额、商用授权、买断和举报需求", icon: ClipboardCheck, urgent: (pendingRequests.count ?? 0) > 0 },
     { href: "/admin/disputes", label: "待处理争议", value: disputes.count ?? 0, detail: "核对双方材料并给出继续履约、退款或关闭裁定", icon: CircleAlert, urgent: (disputes.count ?? 0) > 0 },
     { href: "/admin/artists", label: "画师入驻审核", value: pendingArtists.count ?? 0, detail: "检查入驻资料、服务定位和账户状态", icon: BadgeCheck, urgent: (pendingArtists.count ?? 0) > 0 },
-    { href: "/admin/services", label: "服务内容巡检", value: services.count ?? 0, detail: "查看在售服务并处理异常定价或描述", icon: ClipboardCheck, urgent: false }
   ];
   const metrics = [
     { label: "平台用户", value: users.count ?? 0, icon: UsersRound },
@@ -29,6 +29,7 @@ export default async function AdminDashboardPage() {
   const tools = [
     { href: "/admin/users", title: "用户与权限", detail: "角色、账号状态和风险变更", icon: UsersRound },
     { href: "/admin/services", title: "画师服务审核", detail: "服务说明、定价与下架记录", icon: BriefcaseBusiness },
+    { href: "/admin/requests", title: "公开需求审核", detail: "高金额、商用、买断与举报处理", icon: ClipboardCheck },
     { href: "/admin/shop", title: "商品与商城订单", detail: "商品、履约和模拟退款", icon: ShoppingBag },
     { href: "/admin/audit", title: "操作审计", detail: "管理员操作与治理记录", icon: FileClock }
   ];
