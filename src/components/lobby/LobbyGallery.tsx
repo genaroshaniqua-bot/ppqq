@@ -4,14 +4,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Eye, Images, LoaderCircle, LockKeyhole, Search, Sparkles, UserRound } from "lucide-react";
+import { ArrowUpRight, Eye, Images, LoaderCircle, LockKeyhole, Search, Sparkles, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type LobbyItem = {
   id: string; artist_id: string; artist_name: string; artist_avatar: string | null;
   title: string; image_url: string; tags: string[]; category: string;
-  visibility: "public" | "paid"; access_price: number; created_at: string;
+  visibility: "public" | "paid"; access_price: number; created_at: string; source?: "portfolio" | "curated";
 };
 
 const categoryOrder = ["全部", "头像", "立绘", "插画", "海报", "角色设定", "Live2D", "表情徽章", "Q版", "场景", "漫画", "服装设计", "周边设计", "像素画", "3D模型", "其他"];
@@ -23,6 +23,7 @@ export function LobbyGallery({ items }: { items: LobbyItem[] }) {
   const [unlocked, setUnlocked] = useState<string[]>([]);
   const [loadingId, setLoadingId] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedItem, setSelectedItem] = useState<LobbyItem | null>(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -46,7 +47,7 @@ export function LobbyGallery({ items }: { items: LobbyItem[] }) {
 
   const artists = useMemo(() => {
     const counts = new Map<string, { id: string; name: string; avatar: string | null; count: number }>();
-    items.forEach((item) => {
+    items.filter((item) => item.artist_id).forEach((item) => {
       const current = counts.get(item.artist_id);
       counts.set(item.artist_id, { id: item.artist_id, name: item.artist_name, avatar: item.artist_avatar, count: (current?.count ?? 0) + 1 });
     });
@@ -80,8 +81,9 @@ export function LobbyGallery({ items }: { items: LobbyItem[] }) {
     {message ? <p role="status" className="mt-5 rounded-[18px] bg-ink px-5 py-3 text-center text-sm font-black text-white">{message}</p> : null}
     <div className="mt-6 columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4">{filtered.map((item) => {
       const canView = item.visibility === "public" || unlocked.includes(item.id);
-      return <article key={item.id} className="group mb-5 break-inside-avoid overflow-hidden rounded-[26px] border border-line bg-white shadow-soft transition hover:-translate-y-1 hover:border-purple/35"><div className="relative overflow-hidden bg-bg"><img src={item.image_url} alt={canView ? item.title : "付费作品预览"} className={`h-auto w-full transition duration-500 group-hover:scale-[1.02] ${canView ? "" : "scale-110 blur-2xl"}`} />{!canView ? <div className="absolute inset-0 grid min-h-60 place-items-center bg-ink/44 p-6 text-center text-white"><div><LockKeyhole className="mx-auto" /><p className="mt-3 text-sm font-black">{item.access_price} 点解锁</p><Button type="button" disabled={loadingId === item.id} onClick={() => unlock(item)} className="mt-3 bg-lime text-ink">{loadingId === item.id ? <LoaderCircle size={15} className="animate-spin" /> : <Eye size={15} />}查看完整作品</Button></div></div> : <span className="absolute left-3 top-3 rounded-pill bg-white/90 px-3 py-1.5 text-[11px] font-black text-ink shadow-soft">{item.category}</span>}</div><div className="p-4"><div className="flex items-start justify-between gap-3"><div><h2 className="font-display text-xl font-black">{item.title}</h2><Link href={`/artists/${item.artist_id}`} className="mt-1 inline-flex items-center gap-1 text-xs font-black text-purple">{item.artist_name}<ArrowUpRight size={12} /></Link></div>{item.visibility === "paid" ? <LockKeyhole size={15} className="mt-1 shrink-0 text-purple" /> : <Eye size={15} className="mt-1 shrink-0 text-primary" />}</div><div className="mt-3 flex flex-wrap gap-1.5">{item.tags.slice(0, 5).map((tag) => <button key={tag} type="button" onClick={() => setQuery(tag)} className="rounded-pill bg-bg px-2.5 py-1 text-[11px] font-bold text-muted hover:text-ink">#{tag}</button>)}</div></div></article>;
+      return <article key={item.id} className="group mb-5 break-inside-avoid overflow-hidden rounded-[26px] border border-line bg-white shadow-soft transition hover:-translate-y-1 hover:border-purple/35"><div className="relative overflow-hidden bg-bg"><button type="button" onClick={() => canView && setSelectedItem(item)} disabled={!canView} aria-label={canView ? `打开作品：${item.title}` : undefined} className="block w-full cursor-zoom-in disabled:cursor-default"><img src={item.image_url} alt={canView ? item.title : "付费作品预览"} className={`h-auto w-full transition duration-500 group-hover:scale-[1.02] ${canView ? "" : "scale-110 blur-2xl"}`} /></button>{!canView ? <div className="absolute inset-0 grid min-h-60 place-items-center bg-ink/44 p-6 text-center text-white"><div><LockKeyhole className="mx-auto" /><p className="mt-3 text-sm font-black">{item.access_price} 点解锁</p><Button type="button" disabled={loadingId === item.id} onClick={() => unlock(item)} className="mt-3 bg-lime text-ink">{loadingId === item.id ? <LoaderCircle size={15} className="animate-spin" /> : <Eye size={15} />}查看完整作品</Button></div></div> : <span className="absolute left-3 top-3 rounded-pill bg-white/90 px-3 py-1.5 text-[11px] font-black text-ink shadow-soft">{item.category}</span>}</div><div className="p-4"><div className="flex items-start justify-between gap-3"><div><h2 className="font-display text-xl font-black">{item.title}</h2>{item.artist_id ? <Link href={`/artists/${item.artist_id}`} className="mt-1 inline-flex items-center gap-1 text-xs font-black text-purple">{item.artist_name}<ArrowUpRight size={12} /></Link> : <p className="mt-1 text-xs font-black text-purple">{item.artist_name}</p>}</div>{item.visibility === "paid" ? <LockKeyhole size={15} className="mt-1 shrink-0 text-purple" /> : <Eye size={15} className="mt-1 shrink-0 text-primary" />}</div><div className="mt-3 flex flex-wrap gap-1.5">{item.tags.slice(0, 5).map((tag) => <button key={tag} type="button" onClick={() => setQuery(tag)} className="rounded-pill bg-bg px-2.5 py-1 text-[11px] font-bold text-muted hover:text-ink">#{tag}</button>)}</div></div></article>;
     })}</div>
     {!filtered.length ? <div className="mt-6 grid min-h-52 place-items-center rounded-[28px] border border-dashed border-line bg-white text-center"><div><Images className="mx-auto text-purple" /><p className="mt-3 font-display text-xl font-black">没有匹配的作品</p><button type="button" onClick={() => { setCategory("全部"); setAccess("all"); setQuery(""); }} className="mt-2 text-sm font-black text-purple">清除筛选</button></div></div> : null}
+    {selectedItem ? <div role="dialog" aria-modal="true" aria-label={selectedItem.title} className="fixed inset-0 z-[80] grid place-items-center bg-ink/88 p-4 backdrop-blur-md" onClick={() => setSelectedItem(null)}><div className="relative max-h-[92vh] max-w-6xl" onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => setSelectedItem(null)} aria-label="关闭大图" className="absolute right-3 top-3 z-10 grid size-11 place-items-center rounded-full bg-white text-ink shadow-soft"><X size={20} /></button><img src={selectedItem.image_url} alt={selectedItem.title} className="max-h-[86vh] max-w-full rounded-[24px] object-contain shadow-2xl" /><div className="absolute inset-x-3 bottom-3 rounded-[18px] bg-ink/72 px-4 py-3 text-white backdrop-blur"><p className="font-display text-xl font-black">{selectedItem.title}</p><p className="mt-1 text-xs font-bold text-white/65">{selectedItem.artist_name} · {selectedItem.category}</p></div></div></div> : null}
   </>;
 }
