@@ -124,24 +124,47 @@ function ArtistMarketCard({ request, services, saving, onSubmit }: { request: Ma
   const matching = useMemo(() => services.filter((service) => !request.service_type || service.service_type.includes(request.service_type) || request.service_type.includes(service.service_type)), [services, request.service_type]);
   const available = matching.length > 0 ? matching : services;
   const [serviceId, setServiceId] = useState(available[0]?.id ?? "");
-  const selectedService = available.find((service) => service.id === serviceId) ?? available[0];
+  const effectiveServiceId = serviceId || available[0]?.id || "";
+  const selectedService = available.find((service) => service.id === effectiveServiceId) ?? available[0];
   const [packageId, setPackageId] = useState(selectedService?.packages[0]?.id ?? "");
-  const selectedPackage = selectedService?.packages.find((pack) => pack.id === packageId) ?? selectedService?.packages[0];
+  const effectivePackageId = packageId || selectedService?.packages[0]?.id || "";
+  const selectedPackage = selectedService?.packages.find((pack) => pack.id === effectivePackageId) ?? selectedService?.packages[0];
+  const [validationMessage, setValidationMessage] = useState("");
+
+  useEffect(() => {
+    if (!serviceId && available[0]) setServiceId(available[0].id);
+  }, [available, serviceId]);
+
+  useEffect(() => {
+    if (selectedService && !selectedService.packages.some((pack) => pack.id === packageId)) {
+      setPackageId(selectedService.packages[0]?.id ?? "");
+    }
+  }, [packageId, selectedService]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!effectiveServiceId) {
+      setValidationMessage("请先发布一项已上架的画师服务，再回来提交接稿方案。");
+      return;
+    }
+    if (!effectivePackageId || !selectedPackage) {
+      setValidationMessage("当前服务还没有有效套餐，请先在下方的服务套餐管理中创建套餐。");
+      return;
+    }
+    setValidationMessage("");
     const form = new FormData(event.currentTarget);
-    onSubmit(request.request_id, serviceId, packageId || selectedPackage?.id || "", Number(form.get("quote")), Number(form.get("days")), String(form.get("note")));
+    onSubmit(request.request_id, effectiveServiceId, effectivePackageId, Number(form.get("quote")), Number(form.get("days")), String(form.get("note")));
   }
 
   return <article className="rounded-[22px] border border-line bg-bg p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><span className="rounded-pill bg-primary/12 px-3 py-1 text-xs font-black text-primary">{request.service_type}</span><h3 className="mt-3 font-display text-2xl font-black">{request.title}</h3></div><PriceRange count={Number(request.response_count)} low={request.lowest_quote} high={request.highest_quote} /></div><p className="mt-3 text-sm font-semibold leading-6 text-muted">{request.brief}</p><div className="mt-4 flex flex-wrap gap-3 text-xs font-black text-muted"><span>预算 ¥{request.budget_min}–¥{request.budget_max}</span><span>{request.usage_scope === "personal" ? "个人使用" : "商业／买断审核"}</span><span><Clock3 size={13} className="mr-1 inline" />{new Date(request.collection_ends_at).toLocaleDateString("zh-CN")} 截止</span></div>
     <form onSubmit={handleSubmit} className="mt-5 grid gap-3 rounded-[18px] bg-white p-4 md:grid-cols-2 xl:grid-cols-5">
-      <label className="text-xs font-black">关联服务<select value={serviceId} onChange={(event) => { setServiceId(event.target.value); const next = available.find((item) => item.id === event.target.value); setPackageId(next?.packages[0]?.id ?? ""); }} className="mt-2 h-10 w-full rounded-[12px] border border-line px-3 text-sm">{available.map((service) => <option key={service.id} value={service.id}>{service.title}</option>)}</select></label>
-      <label className="text-xs font-black">关联套餐<select value={packageId || selectedPackage?.id || ""} onChange={(event) => setPackageId(event.target.value)} className="mt-2 h-10 w-full rounded-[12px] border border-line px-3 text-sm">{selectedService?.packages.map((pack) => <option key={pack.id} value={pack.id}>{pack.title} · ¥{pack.price}</option>)}</select></label>
+      <label className="text-xs font-black">关联服务<select value={effectiveServiceId} onChange={(event) => { setServiceId(event.target.value); const next = available.find((item) => item.id === event.target.value); setPackageId(next?.packages[0]?.id ?? ""); }} className="mt-2 h-10 w-full rounded-[12px] border border-line px-3 text-sm"><option value="" disabled>{available.length ? "请选择服务" : "暂无已上架服务"}</option>{available.map((service) => <option key={service.id} value={service.id}>{service.title}</option>)}</select></label>
+      <label className="text-xs font-black">关联套餐<select value={effectivePackageId} onChange={(event) => setPackageId(event.target.value)} className="mt-2 h-10 w-full rounded-[12px] border border-line px-3 text-sm"><option value="" disabled>{selectedService ? "该服务暂无有效套餐" : "请先选择服务"}</option>{selectedService?.packages.map((pack) => <option key={pack.id} value={pack.id}>{pack.title} · ¥{pack.price}</option>)}</select></label>
       <label className="text-xs font-black">最终报价<input name="quote" type="number" min="1" required defaultValue={selectedPackage?.price ?? request.budget_min ?? 299} className="mt-2 h-10 w-full rounded-[12px] border border-line px-3 text-sm" /></label>
       <label className="text-xs font-black">交付天数<input name="days" type="number" min="1" required defaultValue={selectedPackage?.delivery_days ?? 14} className="mt-2 h-10 w-full rounded-[12px] border border-line px-3 text-sm" /></label>
       <label className="text-xs font-black md:col-span-2 xl:col-span-5">接稿说明<textarea name="note" required minLength={10} rows={2} placeholder="说明创作方案、档期和与需求匹配的经验" className="mt-2 w-full rounded-[12px] border border-line p-3 text-sm" /></label>
-      <Button type="submit" disabled={saving || available.length === 0 || !selectedPackage} className="md:col-span-2 xl:col-span-5"><Send size={15} />{request.my_response_id ? "更新接稿方案" : "提交接稿方案"}</Button>
+      {validationMessage ? <p role="alert" className="rounded-[12px] bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800 md:col-span-2 xl:col-span-5">{validationMessage} <a href="#package-manager-heading" className="underline underline-offset-2">前往配置</a></p> : null}
+      <Button type="submit" disabled={saving} className="md:col-span-2 xl:col-span-5"><Send size={15} />{request.my_response_id ? "更新接稿方案" : "提交接稿方案"}</Button>
     </form>
   </article>;
 }
