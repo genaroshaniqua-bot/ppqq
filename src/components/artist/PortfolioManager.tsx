@@ -9,8 +9,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type PortfolioItem = { id: string; title: string; image_url: string; tags: string[]; category: string; visibility: "public" | "paid"; access_price: number; created_at: string };
 
-const categories = ["头像", "立绘", "海报", "插画", "Live2D", "表情徽章", "角色设定", "周边设计", "其他"];
-const quickTags = ["头像", "立绘", "半身", "全身", "海报", "厚涂", "赛璐璐", "Q版", "Live2D", "表情", "商用", "原创角色"];
+const categories = ["头像", "立绘", "插画", "海报", "角色设定", "Live2D", "表情徽章", "Q版", "场景", "漫画", "服装设计", "周边设计", "像素画", "3D模型", "其他"];
+const quickTags = ["头像", "立绘", "半身", "全身", "海报", "厚涂", "赛璐璐", "Q版", "Live2D", "表情", "场景", "漫画", "像素画", "3D", "商用", "原创角色"];
 
 export function PortfolioManager() {
   const [userId, setUserId] = useState("");

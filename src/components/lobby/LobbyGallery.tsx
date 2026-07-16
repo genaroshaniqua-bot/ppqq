@@ -14,7 +14,7 @@ export type LobbyItem = {
   visibility: "public" | "paid"; access_price: number; created_at: string;
 };
 
-const categoryOrder = ["全部", "头像", "立绘", "海报", "插画", "Live2D", "表情徽章", "角色设定", "周边设计", "其他"];
+const categoryOrder = ["全部", "头像", "立绘", "插画", "海报", "角色设定", "Live2D", "表情徽章", "Q版", "场景", "漫画", "服装设计", "周边设计", "像素画", "3D模型", "其他"];
 
 export function LobbyGallery({ items }: { items: LobbyItem[] }) {
   const [category, setCategory] = useState("全部");
@@ -33,7 +33,7 @@ export function LobbyGallery({ items }: { items: LobbyItem[] }) {
     });
   }, []);
 
-  const categories = useMemo(() => categoryOrder.filter((name) => name === "全部" || items.some((item) => item.category === name)), [items]);
+  const categories = categoryOrder;
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return items.filter((item) => {
