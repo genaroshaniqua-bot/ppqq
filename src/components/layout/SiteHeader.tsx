@@ -13,6 +13,7 @@ import { SignOutButton } from "@/components/auth/SignOutButton";
 
 const marketplaceNavItems = [
   { href: "/home", label: "首页" },
+  { href: "/lobby", label: "大厅" },
   { href: "/commissions", label: "约稿" },
   { href: "/market", label: "商店" },
   { href: "/create", label: "发布需求" },
@@ -22,6 +23,7 @@ const marketplaceNavItems = [
 
 const artistNavItems = [
   { href: "/artist", label: "画师工作台" },
+  { href: "/lobby", label: "作品大厅" },
   { href: "/artist/commissions", label: "委托管理" },
   { href: "/artist/products", label: "商品经营" },
   { href: "/artist/portfolio", label: "作品集" },

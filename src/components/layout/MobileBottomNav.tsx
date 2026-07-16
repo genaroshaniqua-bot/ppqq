@@ -8,10 +8,10 @@ import { useRoleWorkspace } from "@/components/auth/RoleWorkspaceProvider";
 
 const marketplaceItems = [
   { href: "/home", label: "首页", icon: Home },
+  { href: "/lobby", label: "大厅", icon: Images },
   { href: "/create", label: "发布", icon: Brush },
   { href: "/market", label: "商店", icon: ShoppingBag },
   { href: "/commissions", label: "约稿", icon: Store },
-  { href: "/chat", label: "消息", icon: MessageCircle },
   { href: "/profile", label: "我的", icon: UserRound }
 ];
 
@@ -26,10 +26,10 @@ const profileItems = [
 
 const artistItems = [
   { href: "/artist", label: "工作台", icon: LayoutDashboard },
+  { href: "/lobby", label: "大厅", icon: Images },
   { href: "/artist/commissions", label: "委托", icon: Store },
   { href: "/artist/products", label: "商品", icon: ShoppingBag },
   { href: "/artist/portfolio", label: "作品", icon: Images },
-  { href: "/studio", label: "创作", icon: Brush },
   { href: "/profile", label: "我的", icon: UserRound }
 ];
 
