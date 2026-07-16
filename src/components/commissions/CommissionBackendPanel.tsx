@@ -75,6 +75,8 @@ type OrderNotification = { id: string; related_order_id: string | null; read_at:
 
 export type CommissionPanelView = "all" | "client" | "artist" | "admin";
 
+const serviceNamePresets = ["OC 头像精绘", "角色半身立绘", "角色全身立绘", "角色设定卡", "Live2D 模型制作", "表情徽章套组", "宣传海报设计", "周边视觉设计", "自定义服务"];
+
 export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPanelView }) {
   const [userId, setUserId] = useState("");
   const [canPublish, setCanPublish] = useState(false);
@@ -93,6 +95,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
   const [serviceQuery, setServiceQuery] = useState("");
   const [serviceType, setServiceType] = useState("全部类型");
   const [serviceSort, setServiceSort] = useState<"推荐排序" | "价格从低到高" | "交付最快">("推荐排序");
+  const [serviceName, setServiceName] = useState(serviceNamePresets[0]);
   const showClient = view === "all" || view === "client";
   const showArtist = view === "all" || view === "artist";
 
@@ -166,7 +169,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.from("artist_services").insert({
       artist_id: userId,
-      title: String(form.get("title") ?? "").trim(),
+      title: String(form.get(serviceName === "自定义服务" ? "customTitle" : "title") ?? "").trim(),
       description: String(form.get("description") ?? "").trim(),
       service_type: String(form.get("serviceType") ?? "角色插画"),
       base_price: Number(form.get("basePrice")),
@@ -180,6 +183,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
       return;
     }
     formElement.reset();
+    setServiceName(serviceNamePresets[0]);
     setMessage("画师服务已发布到真实数据库");
     await loadData();
   }
@@ -423,7 +427,8 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
         <form onSubmit={publishService} className="mt-6 rounded-card border border-line bg-white p-5">
           <div className="flex items-center gap-3"><BriefcaseBusiness className="text-purple" /><h3 className="font-display text-2xl font-black">发布画师服务</h3></div>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <label className="text-sm font-black">服务名称<input name="title" required placeholder="OC 头像精绘" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-bg px-3 outline-none focus:border-primary" /></label>
+            <label className="text-sm font-black">服务名称<select name="title" value={serviceName} onChange={(event) => setServiceName(event.target.value)} className="mt-2 h-11 w-full rounded-[14px] border border-line bg-bg px-3 outline-none focus:border-primary">{serviceNamePresets.map((item) => <option key={item}>{item}</option>)}</select></label>
+            {serviceName === "自定义服务" ? <label className="text-sm font-black">自定义名称<input name="customTitle" required minLength={2} placeholder="输入你的服务名称" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-bg px-3 outline-none focus:border-primary" /></label> : null}
             <label className="text-sm font-black">服务类型<select name="serviceType" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-bg px-3 outline-none"><option>角色插画</option><option>头像</option><option>立绘</option><option>Live2D</option><option>周边设计</option></select></label>
             <label className="text-sm font-black">起步价<input name="basePrice" type="number" min="1" required defaultValue="299" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-bg px-3 outline-none" /></label>
             <label className="text-sm font-black">交付天数<input name="deliveryDays" type="number" min="1" required defaultValue="14" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-bg px-3 outline-none" /></label>

@@ -15,7 +15,7 @@ export default async function CommissionServiceDetailPage({ params }: { params: 
     supabase.from("profiles").select("display_name, avatar_url, bio").eq("id", service.artist_id).single(),
     supabase.from("artist_profiles").select("headline, introduction, availability, response_time_hours, review_status").eq("user_id", service.artist_id).single(),
     supabase.from("service_packages").select("id, tier, title, description, price, delivery_days, revision_limit, features").eq("service_id", service.id).eq("is_active", true).order("position"),
-    supabase.from("portfolios").select("id, title, image_url, tags").eq("artist_id", service.artist_id).order("created_at", { ascending: false }).limit(4),
+    supabase.from("portfolios").select("id, title, image_url, tags").eq("artist_id", service.artist_id).eq("visibility", "public").order("created_at", { ascending: false }).limit(4),
     supabase.from("artist_reviews").select("id, rating, body, created_at").eq("artist_id", service.artist_id).order("created_at", { ascending: false }).limit(3)
   ]);
   const averageRating = reviews?.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : null;

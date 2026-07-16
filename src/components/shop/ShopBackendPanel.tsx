@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CreditCard, Download, ExternalLink, LoaderCircle, Minus, Package, Plus, RotateCcw, Send, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { CheckCircle2, CreditCard, Download, ExternalLink, ImagePlus, LoaderCircle, Minus, Package, Plus, RotateCcw, Send, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AddressPanel, UserAddress } from "@/components/shop/AddressPanel";
@@ -127,9 +127,22 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
     const form = new FormData(formElement);
     const kind = String(form.get("kind")) as "digital" | "physical";
     setSaving(true); setMessage("");
-    const { error } = await createSupabaseBrowserClient().rpc("publish_shop_product", {
+    const coverFile = form.get("coverImage");
+    const supabase = createSupabaseBrowserClient();
+    let coverUrl: string | null = null;
+    if (coverFile instanceof File && coverFile.size > 0) {
+      if (!coverFile.type.startsWith("image/")) { setSaving(false); setMessage("商品封面必须是图片文件"); return; }
+      if (coverFile.size > 10 * 1024 * 1024) { setSaving(false); setMessage("商品封面不能超过 10MB"); return; }
+      const extension = coverFile.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userId}/products/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("portfolios").upload(path, coverFile, { contentType: coverFile.type, upsert: false });
+      if (uploadError) { setSaving(false); setMessage(uploadError.message); return; }
+      coverUrl = supabase.storage.from("portfolios").getPublicUrl(path).data.publicUrl;
+    }
+    const { error } = await supabase.rpc("publish_shop_product", {
       product_title: String(form.get("title") ?? ""), product_description: String(form.get("description") ?? ""),
-      product_kind: kind, product_price: Number(form.get("price")), product_stock: kind === "physical" ? Number(form.get("stock")) : null
+      product_kind: kind, product_price: Number(form.get("price")), product_stock: kind === "physical" ? Number(form.get("stock")) : null,
+      product_cover_url: coverUrl
     });
     setSaving(false);
     if (error) { setMessage(error.message); return; }
@@ -191,7 +204,7 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
 
   return <>
     {message ? <p role="status" className="mb-5 rounded-pill bg-ink px-5 py-3 text-center text-sm font-black text-white">{message}</p> : null}
-    {showSeller && canSell ? <form onSubmit={publishProduct} className="mb-6 rounded-card border border-primary/25 bg-white p-5 shadow-soft"><div className="flex items-center gap-3"><Package className="text-primary" /><h2 className="font-display text-2xl font-black">卖家发布商品</h2></div><div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5"><input name="title" required minLength={3} placeholder="商品名称" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold outline-none" /><select name="kind" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold"><option value="digital">数字商品</option><option value="physical">实体周边</option></select><input name="price" required type="number" min="1" placeholder="价格" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold" /><input name="stock" type="number" min="0" placeholder="实体库存" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold" /><Button type="submit" disabled={saving}><Plus size={16} />发布商品</Button><textarea name="description" required minLength={10} rows={2} placeholder="商品内容、格式、授权或交付说明" className="rounded-[14px] border border-line bg-bg p-3 text-sm font-semibold outline-none md:col-span-2 lg:col-span-5" /></div></form> : null}
+    {showSeller && canSell ? <form onSubmit={publishProduct} className="mb-6 rounded-card border border-primary/25 bg-white p-5 shadow-soft"><div className="flex items-center gap-3"><Package className="text-primary" /><h2 className="font-display text-2xl font-black">卖家发布商品</h2></div><div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5"><input name="title" required minLength={3} placeholder="商品名称" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold outline-none" /><select name="kind" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold"><option value="digital">数字商品</option><option value="physical">实体周边</option></select><input name="price" required type="number" min="1" placeholder="价格" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold" /><input name="stock" type="number" min="0" placeholder="实体库存" className="h-11 rounded-[14px] border border-line bg-bg px-3 text-sm font-bold" /><Button type="submit" disabled={saving}><Plus size={16} />{saving ? "正在同步" : "发布商品"}</Button><label className="flex min-h-24 cursor-pointer items-center justify-center gap-3 rounded-[14px] border-2 border-dashed border-purple/25 bg-purple/5 px-4 text-sm font-black text-purple md:col-span-2"><ImagePlus size={19} />选择本地商品封面<input name="coverImage" type="file" accept="image/*" className="sr-only" /></label><textarea name="description" required minLength={10} rows={3} placeholder="商品内容、格式、授权或交付说明" className="rounded-[14px] border border-line bg-bg p-3 text-sm font-semibold outline-none md:col-span-2 lg:col-span-3" /><p className="self-center text-xs font-semibold leading-5 text-muted lg:col-span-5">发布时会先把本地图片同步到云端，再将封面与商品绑定。支持 JPG、PNG、WebP，最大 10MB。</p></div></form> : null}
     {showSeller || view === "admin" ? <section className="mb-6 rounded-card border border-line bg-white p-5 shadow-soft"><div className="flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black">{view === "admin" ? "商品内容管理" : "我的商品"}</h2><span className="rounded-pill bg-bg px-3 py-1 text-xs font-black text-muted">{managedProducts.length} 项</span></div><div className="mt-4 grid gap-3 md:grid-cols-2">{managedProducts.map((product) => <article key={product.id} className="rounded-[18px] bg-bg p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black text-primary">{product.kind === "digital" ? "数字商品" : "实体商品"}</p><h3 className="mt-1 font-display text-lg font-black">{product.title}</h3></div><span className={`rounded-pill px-3 py-1 text-xs font-black ${product.is_active ? "bg-lime text-ink" : "bg-line text-muted"}`}>{product.is_active ? "在售" : "已下架"}</span></div><div className="mt-3 flex items-center justify-between gap-3"><p className="text-sm font-black">¥{product.price}{product.stock !== null ? ` · 库存 ${product.stock}` : ""}</p><Button type="button" variant="secondary" disabled={saving} onClick={() => toggleProduct(product)}>{product.is_active ? "下架" : "重新上架"}</Button></div></article>)}{managedProducts.length === 0 ? <p className="text-sm font-semibold text-muted">暂无可管理商品。</p> : null}</div></section> : null}
     {showBuyer ? <div className="mb-6 flex gap-2 overflow-x-auto pb-1">{[["all","全部"],["digital","数字商品"],["physical","实体周边"]].map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value as typeof filter)} className={`min-h-11 shrink-0 rounded-pill px-4 text-sm font-black ${filter === value ? "bg-ink text-white" : "bg-white text-muted shadow-soft"}`}>{label}</button>)}</div> : null}
     {showBuyer ? <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
