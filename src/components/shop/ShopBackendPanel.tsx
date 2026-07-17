@@ -19,7 +19,7 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<ShopOrder[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct] = useState<Product | null>(null);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [downloadLinks, setDownloadLinks] = useState<Record<string, string>>({});
@@ -37,7 +37,7 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
     const { data: { user } } = await supabase.auth.getUser();
     const [{ data: productRows, error: productError }, { data: cartRows, error: cartError }, { data: orderRows, error: orderError }, { data: itemRows, error: itemError }, { data: addressRows, error: addressError }, { data: profile, error: profileError }] = await Promise.all([
       supabase.from("products").select("id, seller_id, title, description, kind, price, cover_url, stock, is_active").order("created_at"),
-      supabase.from("cart_items").select("product_id, quantity").order("created_at"),
+      supabase.rpc("get_my_cart"),
       supabase.from("shop_orders").select("id, buyer_id, amount, payment_status, fulfillment_status, delivery_method, delivery_note, digital_download_url, delivery_file_path, tracking_company, tracking_number, shipping_address, created_at").order("created_at", { ascending: false }).limit(30),
       supabase.from("shop_order_items").select("id, order_id, product_id, quantity, unit_price"),
       supabase.from("user_addresses").select("id, label, recipient_name, phone, region, detail, is_default").order("created_at"),
@@ -68,11 +68,14 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
 
   async function setQuantity(productId: string, quantity: number) {
     setSaving(true); setMessage("");
-    const { error } = await createSupabaseBrowserClient().rpc("set_cart_quantity", { target_product_id: productId, target_quantity: quantity });
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.rpc("set_cart_quantity", { target_product_id: productId, target_quantity: quantity });
     setSaving(false);
     if (error) { setMessage(error.message); return; }
     setMessage(quantity <= 0 ? "商品已移出购物车" : "真实购物车已更新");
-    await load();
+    const { data: refreshedCart, error: refreshError } = await supabase.rpc("get_my_cart");
+    if (refreshError) { setMessage(refreshError.message); return; }
+    setCart((refreshedCart ?? []) as CartItem[]);
   }
 
   async function checkout() {

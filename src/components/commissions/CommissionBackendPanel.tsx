@@ -113,7 +113,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
       supabase.from("profiles").select("role").eq("id", user.id).single(),
       supabase.from("artist_services").select("id, artist_id, title, description, service_type, base_price, revision_limit, delivery_days, is_active").eq("is_active", true).order("created_at", { ascending: false }),
       supabase.from("commission_requests").select("id, client_id, service_id, title, brief, budget_min, budget_max, deadline, usage_scope, status, quoted_amount, artist_response_note, created_at").order("created_at", { ascending: false }),
-      supabase.from("commission_orders").select("id, request_id, status, quoted_amount, deposit_amount, balance_amount, deposit_status, balance_status, created_at").order("created_at", { ascending: false }),
+      supabase.rpc("get_my_commission_orders"),
       supabase.from("order_deliveries").select("id, order_id, kind, note, decision, decision_note, created_at").order("created_at", { ascending: false }),
       supabase.from("order_disputes").select("id, order_id, reason, status, resolution, created_at").order("created_at", { ascending: false }),
       supabase.from("notifications").select("id, related_order_id, read_at").is("read_at", null).order("created_at", { ascending: false })
