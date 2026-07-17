@@ -499,6 +499,41 @@ function RequestCard({ request, mode, saving, onRespond, onConfirm }: { request:
   </article>;
 }
 
+function getOrderNextAction(mode: CommissionPanelView, status: CommissionOrder["status"], approvedDraft: boolean) {
+  if (mode === "admin") {
+    return status === "disputed"
+      ? { title: "现在轮到管理员：核对证据并完成仲裁", detail: "选择继续履约、模拟退款或关闭订单，并填写可追溯的仲裁依据。" }
+      : { title: "管理员只读查看", detail: "订单进入争议状态后，才需要管理员介入处理。" };
+  }
+
+  const isClient = mode === "client" || mode === "all";
+  const guidance: Record<CommissionOrder["status"], { title: string; detail: string }> = {
+    pending_deposit: isClient
+      ? { title: "现在轮到你：确认并支付模拟定金", detail: "支付后订单才会进入创作阶段，画师将可以提交草稿。" }
+      : { title: "等待委托人支付定金", detail: "定金到账前无需开始交付，订单会保持冻结。" },
+    in_progress: isClient
+      ? { title: "画师正在创作", detail: approvedDraft ? "草稿已通过，等待画师提交最终成稿。" : "等待画师提交第一版草稿，你可以通过订单消息补充细节。" }
+      : { title: approvedDraft ? "现在轮到你：提交最终成稿" : "现在轮到你：提交草稿", detail: approvedDraft ? "按已确认草稿完成成稿并写明交付内容。" : "说明构图、配色和需要委托人确认的重点。" },
+    draft_review: isClient
+      ? { title: "现在轮到你：审核草稿", detail: "可以通过草稿进入成稿阶段，或写明修改意见后退回。" }
+      : { title: "等待委托人审核草稿", detail: "审核结果会在这里更新；需要补充说明可使用订单消息。" },
+    revision_requested: isClient
+      ? { title: "等待画师按意见修改", detail: "修改版提交后，你会再次进入审核环节。" }
+      : { title: "现在轮到你：提交修改版", detail: "请逐项回应委托人的修改意见，再提交新的草稿或成稿。" },
+    final_review: isClient
+      ? { title: "现在轮到你：验收成稿", detail: "确认交付内容无误后通过验收；如有问题请写明具体修改项。" }
+      : { title: "等待委托人验收成稿", detail: "验收通过后订单会进入尾款支付阶段。" },
+    pending_balance: isClient
+      ? { title: "现在轮到你：支付模拟尾款", detail: "尾款完成后订单结清，并开放画师评价入口。" }
+      : { title: "等待委托人支付尾款", detail: "尾款完成后订单自动结清，交付和付款记录会被保存。" },
+    completed: { title: "订单已完成", detail: isClient ? "你可以提交本次约稿评价，帮助其他委托人判断服务质量。" : "本次交付已结清，评价与订单记录会保留在账户中。" },
+    disputed: { title: "订单已冻结，等待管理员仲裁", detail: "争议处理期间无法继续交付或支付，请在订单消息中保留必要证据。" },
+    cancelled: { title: "订单已关闭", detail: "请核对下方定金与尾款状态；如有疑问可联系平台管理员。" }
+  };
+
+  return guidance[status];
+}
+
 function OrderWorkflowCard({ mode, order, userId, unreadCount, onMessagesRead, deliveries, dispute, isAdmin, saving, onPayDeposit, onSubmit, onReview, onPayBalance, onOpenDispute, onResolveDispute }: { mode: CommissionPanelView; order: CommissionOrder; userId: string; unreadCount: number; onMessagesRead: () => Promise<void>; deliveries: OrderDelivery[]; dispute: OrderDispute | null; isAdmin: boolean; saving: boolean; onPayDeposit: (id: string) => Promise<void>; onSubmit: (id: string, kind: "draft" | "final", note: string) => Promise<void>; onReview: (id: string, decision: "approved" | "revision_requested", note: string) => Promise<void>; onPayBalance: (id: string) => Promise<void>; onOpenDispute: (id: string, reason: string) => Promise<void>; onResolveDispute: (id: string, action: "continue" | "refund" | "close", note: string) => Promise<void> }) {
   const [deliveryNote, setDeliveryNote] = useState("");
   const [reviewNote, setReviewNote] = useState("");
@@ -508,6 +543,7 @@ function OrderWorkflowCard({ mode, order, userId, unreadCount, onMessagesRead, d
   const waitingDelivery = deliveries.find((delivery) => delivery.decision === null);
   const revisionDelivery = deliveries.find((delivery) => delivery.decision === "revision_requested");
   const nextKind: "draft" | "final" = order.status === "revision_requested" ? (revisionDelivery?.kind ?? "draft") : approvedDraft ? "final" : "draft";
+  const nextAction = getOrderNextAction(mode, order.status, approvedDraft);
   const labels: Record<CommissionOrder["status"], string> = {
     pending_deposit: "待支付定金",
     in_progress: approvedDraft ? "待提交成稿" : "待提交草稿",
@@ -525,6 +561,10 @@ function OrderWorkflowCard({ mode, order, userId, unreadCount, onMessagesRead, d
       <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-black">订单 {order.id.slice(0, 8)}</p><span className="rounded-pill bg-white px-3 py-1 text-xs font-black text-primary">{labels[order.status]}</span></div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-xs font-bold text-muted"><span>总价 ¥{order.quoted_amount}</span><span>定金 ¥{order.deposit_amount}</span><span>尾款 ¥{order.balance_amount}</span></div>
       <OrderStatusTimeline status={order.status} />
+      <div className="mt-4 rounded-[16px] border border-primary/20 bg-primary/5 p-4" aria-live="polite">
+        <p className="text-sm font-black text-ink">{nextAction.title}</p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-muted">{nextAction.detail}</p>
+      </div>
 
       {(mode === "client" || mode === "all") && order.status === "pending_deposit" && order.deposit_status === "unpaid" ? <Button type="button" disabled={saving} className="mt-4" onClick={() => onPayDeposit(order.id)}><CreditCard size={16} />模拟支付定金</Button> : null}
 
