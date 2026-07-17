@@ -18,6 +18,7 @@ export function OrderMessagePanel({ orderId, userId, unreadCount, onRead }: { or
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [draftBody, setDraftBody] = useState("");
 
   const loadMessages = useCallback(async () => {
     setLoading(true);
@@ -46,7 +47,7 @@ export function OrderMessagePanel({ orderId, userId, unreadCount, onRead }: { or
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    const body = String(new FormData(form).get("body") ?? "").trim();
+    const body = draftBody.trim();
     if (!body) return;
     setSending(true);
     setError("");
@@ -57,6 +58,7 @@ export function OrderMessagePanel({ orderId, userId, unreadCount, onRead }: { or
       return;
     }
     form.reset();
+    setDraftBody("");
     await loadMessages();
   }
 
@@ -71,7 +73,7 @@ export function OrderMessagePanel({ orderId, userId, unreadCount, onRead }: { or
         {messages.length === 0 ? <p className="py-3 text-center text-xs font-bold text-muted">暂无消息，可以先确认需求、排期或交付细节。</p> : null}
       </div>}
       {error ? <p role="alert" className="mt-2 text-xs font-bold text-danger">{error}</p> : null}
-      <form onSubmit={sendMessage} className="mt-3 flex gap-2"><input name="body" maxLength={2000} aria-label={`订单消息-${orderId}`} placeholder="发送订单相关消息" className="h-10 min-w-0 flex-1 rounded-[12px] border border-line bg-bg px-3 text-sm font-semibold outline-none focus:border-purple" /><Button type="submit" disabled={sending}><Send size={15} />发送</Button></form>
+      <form onSubmit={sendMessage} className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]"><input name="body" maxLength={2000} value={draftBody} onChange={(event) => setDraftBody(event.target.value)} aria-label={`订单消息-${orderId}`} placeholder="确认需求、排期或交付细节" className="h-11 min-w-0 rounded-[12px] border border-line bg-bg px-3 text-sm font-semibold outline-none focus:border-purple" /><Button type="submit" disabled={sending || draftBody.trim().length === 0}><Send size={15} />{sending ? "发送中" : "发送消息"}</Button>{draftBody.length > 0 ? <p className="text-[11px] font-semibold text-muted sm:col-span-2">消息会作为履约记录保存，请避免发送无关隐私信息。</p> : null}</form>
     </div> : null}
   </div>;
 }

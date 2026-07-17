@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { Check, Send } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, Send, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -42,15 +43,24 @@ export function ServiceRequestPanel({ service, packages }: { service: ServiceSum
   const [selectedId, setSelectedId] = useState(options[0].id);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"success" | "error">("success");
+  const [title, setTitle] = useState("");
+  const [brief, setBrief] = useState("");
   const selected = options.find((item) => item.id === selectedId) ?? options[0];
+  const titleRemaining = Math.max(0, 4 - title.trim().length);
+  const briefRemaining = Math.max(0, 20 - brief.trim().length);
+  const canSubmit = titleRemaining === 0 && briefRemaining === 0;
+  const today = new Date().toISOString().slice(0, 10);
 
   async function submitRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const supabase = createSupabaseBrowserClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setMessage("登录后才能发起委托。");
+      setMessageTone("error");
       return;
     }
 
@@ -82,10 +92,14 @@ export function ServiceRequestPanel({ service, packages }: { service: ServiceSum
     setSaving(false);
     if (error) {
       setMessage(error.message);
+      setMessageTone("error");
       return;
     }
-    event.currentTarget.reset();
-    setMessage("委托需求已发送，画师确认范围后会给出最终报价。");
+    formElement.reset();
+    setTitle("");
+    setBrief("");
+    setMessageTone("success");
+    setMessage("委托已发送。下一步等待画师确认范围并给出最终报价。");
   }
 
   return (
@@ -127,15 +141,16 @@ export function ServiceRequestPanel({ service, packages }: { service: ServiceSum
 
       <form onSubmit={submitRequest} className="mt-6 rounded-[22px] bg-bg p-4 sm:p-5">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm font-black">需求标题<input name="title" required minLength={4} placeholder="例如：月光系 OC 半身立绘" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-white px-3 outline-none focus:border-primary" /></label>
-          <label className="text-sm font-black">期望交付日期<input name="deadline" type="date" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-white px-3 outline-none focus:border-primary" /></label>
+          <label className="text-sm font-black">需求标题<input name="title" required minLength={4} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：月光系 OC 半身立绘" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-white px-3 outline-none focus:border-primary" /><span className="mt-1 block text-[11px] font-semibold text-muted">{titleRemaining > 0 ? `还需填写 ${titleRemaining} 个字。` : "标题已完整。"}</span></label>
+          <label className="text-sm font-black">期望交付日期<input name="deadline" type="date" min={today} className="mt-2 h-11 w-full rounded-[14px] border border-line bg-white px-3 outline-none focus:border-primary" /><span className="mt-1 block text-[11px] font-semibold text-muted">留空表示可与画师协商；选择日期后订单会提示剩余时间。</span></label>
           <label className="text-sm font-black">预算上限<input name="budgetMax" type="number" min={selected.price} required value={Math.max(selected.price, selected.price * 1.5)} readOnly className="mt-2 h-11 w-full rounded-[14px] border border-line bg-white px-3 outline-none" /></label>
           <label className="text-sm font-black">使用范围<select name="usageScope" className="mt-2 h-11 w-full rounded-[14px] border border-line bg-white px-3 outline-none focus:border-primary"><option value="personal">个人使用</option><option value="commercial">商业使用</option></select></label>
-          <label className="text-sm font-black md:col-span-2">详细需求<textarea name="brief" required minLength={20} rows={5} placeholder="描述角色设定、构图、服装、表情、尺寸、授权和交付格式" className="mt-2 w-full rounded-[14px] border border-line bg-white p-3 outline-none focus:border-primary" /></label>
+          <label className="text-sm font-black md:col-span-2">详细需求<textarea name="brief" required minLength={20} value={brief} onChange={(event) => setBrief(event.target.value)} rows={5} placeholder="描述角色设定、构图、服装、表情、尺寸、授权和交付格式" className="mt-2 w-full rounded-[14px] border border-line bg-white p-3 outline-none focus:border-primary" /><span className="mt-1 block text-[11px] font-semibold text-muted">{briefRemaining > 0 ? `还需填写 ${briefRemaining} 个字，请至少说明角色、画面和交付要求。` : "需求信息已达到可提交标准。"}</span></label>
           <label className="flex items-center gap-2 rounded-[14px] bg-white px-4 py-3 text-sm font-black md:col-span-2"><input name="allowPublic" type="checkbox" />允许画师在作品集中公开展示成稿</label>
         </div>
-        {message ? <p role="status" className="mt-4 rounded-[14px] bg-white px-4 py-3 text-sm font-bold text-muted">{message}</p> : null}
-        <Button type="submit" disabled={saving} className="mt-4 w-full sm:w-auto"><Send size={16} aria-hidden="true" />发送委托需求</Button>
+        {message ? <div role={messageTone === "error" ? "alert" : "status"} className={cn("mt-4 flex items-start gap-3 rounded-[14px] border px-4 py-3 text-sm font-bold", messageTone === "error" ? "border-danger/20 bg-danger/5 text-danger" : "border-primary/20 bg-white text-ink")}>{messageTone === "error" ? <XCircle size={18} className="mt-0.5 shrink-0" /> : <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-primary" />}<div><p>{message}</p>{messageTone === "success" ? <Link href="/profile/commissions" className="mt-2 inline-flex items-center gap-1 text-xs font-black text-primary">查看我的委托<ArrowRight size={14} /></Link> : null}</div></div> : null}
+        <Button type="submit" disabled={saving || !canSubmit} className="mt-4 w-full sm:w-auto"><Send size={16} aria-hidden="true" />{saving ? "正在发送" : "发送委托需求"}</Button>
+        {!canSubmit ? <p className="mt-2 text-xs font-semibold text-muted">填写完整标题和详细需求后即可发送。</p> : null}
       </form>
     </section>
   );

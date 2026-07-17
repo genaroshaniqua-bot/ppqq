@@ -16,7 +16,7 @@ export function ProfileHubNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="个人中心设置" className="mx-auto mt-5 flex max-w-7xl gap-2 overflow-x-auto px-4 pb-1 sm:px-6 lg:px-8">
+    <nav aria-label="个人中心设置" className="rail-scroll mx-auto mt-5 flex max-w-7xl gap-2 overflow-x-auto px-4 pb-1 sm:px-6 lg:px-8">
       {items.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         const Icon = item.icon;

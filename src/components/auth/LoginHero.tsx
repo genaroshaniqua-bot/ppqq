@@ -106,18 +106,23 @@ export function LoginHero() {
         throw new Error("此账户已被管理员暂停，请联系平台处理。");
       }
 
+      const requestedNext = new URLSearchParams(window.location.search).get("next");
+      const safeNext = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") && !requestedNext.startsWith("/login")
+        ? requestedNext
+        : null;
+
       if (profile?.role === "admin") {
         window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
-        router.push("/admin");
+        router.push(safeNext ?? "/admin");
       } else if (entryRole === "artist" && profile?.role === "artist" && artist?.review_status === "approved") {
         window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "artist");
-        router.push("/artist");
+        router.push(safeNext ?? "/artist");
       } else if (entryRole === "artist") {
         window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
         router.push("/profile?apply=artist");
       } else {
         window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
-        router.push("/home");
+        router.push(safeNext ?? "/home");
       }
       router.refresh();
     } catch (error) {
