@@ -1,59 +1,81 @@
-import { BadgeCheck, ClipboardList, Search, ShieldCheck, Sparkles, UserSearch } from "lucide-react";
-import { CommissionBackendPanel } from "@/components/commissions/CommissionBackendPanel";
-import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
-import { TaskPathGuide } from "@/components/onboarding/TaskPathGuide";
+import Link from "next/link";
+import { ArrowRight, FilePlus2, Images, ListChecks } from "lucide-react";
+import { ArtistWorkCommissionBrowser, type CommissionArtwork } from "@/components/commissions/ArtistWorkCommissionBrowser";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const trustNotes = [
-  { icon: BadgeCheck, label: "真实画师服务", detail: "服务、报价与交付记录均来自 Supabase" },
-  { icon: ShieldCheck, label: "委托人审核", detail: "草稿与成稿由委托人确认，争议由管理员介入" },
-  { icon: Sparkles, label: "反 AI 训练保护", detail: "默认不授权作品用于 AI 训练" }
-];
+export default async function CommissionsPage() {
+  const supabase = await createSupabaseServerClient();
+  const [{ data: portfolioRows }, { data: serviceRows }, { data: approvedRows }] = await Promise.all([
+    supabase.from("portfolios").select("id,artist_id,title,image_url,tags,category,visibility,access_price,created_at").order("created_at", { ascending: false }).limit(60),
+    supabase.from("artist_services").select("id,artist_id,service_type,base_price").eq("is_active", true),
+    supabase.from("artist_profiles").select("user_id,availability").eq("review_status", "approved")
+  ]);
 
-export default function CommissionsPage() {
+  const approved = new Map((approvedRows ?? []).map((artist) => [artist.user_id, artist.availability]));
+  const serviceArtistIds = [...new Set((serviceRows ?? []).map((service) => service.artist_id))];
+  const { data: profileRows } = serviceArtistIds.length
+    ? await supabase.from("profiles").select("id,display_name").in("id", serviceArtistIds)
+    : { data: [] };
+  const profileMap = new Map((profileRows ?? []).map((profile) => [profile.id, profile.display_name]));
+  const servicesByArtist = new Map<string, Array<{ id: string; service_type: string; base_price: number }>>();
+  for (const service of serviceRows ?? []) {
+    const current = servicesByArtist.get(service.artist_id) ?? [];
+    current.push({ ...service, base_price: Number(service.base_price) });
+    servicesByArtist.set(service.artist_id, current);
+  }
+
+  const artworks: CommissionArtwork[] = (portfolioRows ?? [])
+    .filter((item) => approved.has(item.artist_id) && servicesByArtist.has(item.artist_id))
+    .map((item) => {
+      const services = servicesByArtist.get(item.artist_id) ?? [];
+      return {
+        id: item.id,
+        artistId: item.artist_id,
+        artistName: profileMap.get(item.artist_id) ?? "未名画师",
+        title: item.title,
+        imageUrl: item.image_url,
+        tags: item.tags ?? [],
+        category: item.category || services[0]?.service_type || "其他",
+        visibility: item.visibility,
+        accessPrice: Number(item.access_price ?? 0),
+        serviceCount: services.length,
+        startingPrice: Math.min(...services.map((service) => service.base_price)),
+        availability: approved.get(item.artist_id) ?? "open"
+      };
+    });
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <TaskPathGuide
-        title="你想指定画师，还是先公开征集？"
-        description="两条路径最终都会进入同一套订单流程：确认报价、支付模拟定金、审核草稿与成稿、支付尾款。区别只在于你是否已经选好画师。"
-        paths={[
-          { eyebrow: "已经有方向", title: "按服务找画师", description: "适合已经知道画风、预算或交付类型的委托。先看服务与套餐，再把需求发给指定画师。", steps: ["筛选服务", "查看套餐", "发送委托"], href: "#commission-services", action: "浏览画师服务", icon: UserSearch, emphasis: "dark" },
-          { eyebrow: "还没决定画师", title: "发布公开需求", description: "先写清预算、用途和档期，让多位画师用真实服务响应；你最终只能选择一位。", steps: ["填写需求", "收集方案", "选择一人"], href: "/create", action: "去发布需求", icon: ClipboardList }
-        ]}
-      />
-      <section className="overflow-hidden rounded-[36px] bg-ink px-6 py-7 text-white shadow-[0_24px_70px_rgba(18,16,22,0.16)] sm:px-8 sm:py-9">
-        <div className="grid gap-7 lg:grid-cols-[1fr_0.72fr] lg:items-end">
-          <div>
-            <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-lime">
-              <Search size={15} aria-hidden="true" /> 找画师
-            </p>
-            <h2 className="mt-3 max-w-3xl font-display text-4xl font-black tracking-[-0.035em] sm:text-5xl">
-              按预算、档期与授权找到合适服务
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-white/68 sm:text-base">
-              这里仅用于委托人发现服务和管理自己的约稿；画师发布、报价与交付统一在画师工作台完成。
-            </p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            <FeatureArtPanel src="/images/artwork/silver-twins.jpg" alt="银发双人角色插画委托样例" eyebrow="委托作品预览" caption="先看画风与完成度，再比较档期、授权和报价" className="min-h-[170px] sm:col-span-3 lg:col-span-1" priority />
-            {trustNotes.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="flex items-start gap-3 rounded-[18px] border border-white/10 bg-white/[0.06] px-4 py-3">
-                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-lime text-ink">
-                    <Icon size={15} aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-black">{item.label}</p>
-                    <p className="mt-0.5 text-xs font-semibold leading-5 text-white/56">{item.detail}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Commission</p>
+          <h1 className="mt-1 font-display text-4xl font-black tracking-[-0.03em] sm:text-5xl">选择你的约稿方式</h1>
+          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-muted">直接发布需求，或先从作品判断画风，再进入画师主页选择服务。</p>
         </div>
+        <Link href="/profile/commissions" className="inline-flex min-h-10 items-center gap-2 rounded-pill border border-line bg-white px-4 text-xs font-black text-muted shadow-soft transition hover:border-primary hover:text-ink">
+          <ListChecks size={15} aria-hidden="true" />查看我的约稿
+        </Link>
+      </header>
+
+      <section className="mt-6 grid gap-4 md:grid-cols-2" aria-label="约稿方式">
+        <Link href="/create" className="group flex min-h-[190px] flex-col justify-between rounded-[28px] bg-ink p-6 text-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-xl sm:p-7">
+          <span className="grid size-12 place-items-center rounded-full bg-lime text-ink"><FilePlus2 size={21} aria-hidden="true" /></span>
+          <div className="mt-8">
+            <p className="text-xs font-black text-lime">还没有决定画师</p>
+            <div className="mt-1 flex items-end justify-between gap-4"><div><h2 className="font-display text-3xl font-black">发起约稿</h2><p className="mt-2 text-sm font-semibold text-white/62">填写预算、档期和授权范围，公开征集画师方案。</p></div><ArrowRight className="mb-1 shrink-0 transition group-hover:translate-x-1" aria-hidden="true" /></div>
+          </div>
+        </Link>
+
+        <Link href="#artist-work-browser" className="group flex min-h-[190px] flex-col justify-between rounded-[28px] border border-line bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:border-primary sm:p-7">
+          <span className="grid size-12 place-items-center rounded-full bg-primary/12 text-primary"><Images size={21} aria-hidden="true" /></span>
+          <div className="mt-8">
+            <p className="text-xs font-black text-primary">先确认画风是否合适</p>
+            <div className="mt-1 flex items-end justify-between gap-4"><div><h2 className="font-display text-3xl font-black">根据画师作品约稿</h2><p className="mt-2 text-sm font-semibold text-muted">浏览公开作品，进入画师主页查看服务与套餐。</p></div><ArrowRight className="mb-1 shrink-0 transition group-hover:translate-x-1" aria-hidden="true" /></div>
+          </div>
+        </Link>
       </section>
 
-      <CommissionBackendPanel view="client" />
+      <ArtistWorkCommissionBrowser items={artworks} />
     </div>
   );
 }
