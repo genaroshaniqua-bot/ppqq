@@ -13,14 +13,14 @@
 
 ### Full-view comparison
 
-- The implementation matches the reference's defining structure: dark merchandise canvas, large editorial heading, dense colored category controls, category lead cards, and horizontally browsable square artwork cards.
+- The implementation preserves the reference's defining structure while adapting it to the product's light visual system: a pale lavender canvas, large editorial heading, dense colored category controls, category lead cards, and horizontally browsable square artwork cards.
 - The platform's existing white global navigation is intentionally preserved so the redesigned page remains consistent with the rest of 未名 and does not create a second navigation system.
 - Product copy and metadata are adapted to the commission workflow rather than copied from a digital-goods marketplace: real artist works open artist services, while curated inspiration clearly starts a similar request.
 
 ### Focused component comparison
 
 - Category controls use solid high-contrast colors and an explicit selected ring; their shape, density, and horizontal overflow behavior follow the reference.
-- Artwork cards use square crops, top-left status labels, top-right bookmark affordances, compact creator/title metadata, and direct action-oriented footers.
+- Artwork cards use white elevated surfaces, square crops, top-left status labels, top-right bookmark affordances, compact creator/title metadata, and direct action-oriented footers.
 - Category rows use a colored lead card plus a compact scroll rail. Card widths were reduced from 245 px to 210 px and the lead card from 190 px to 170 px after comparison to improve information density.
 
 ## Interaction and responsive QA
@@ -38,6 +38,7 @@
 2. Replaced generic lists with horizontal artwork rails backed by real portfolio data and clearly labeled curated inspiration.
 3. Tightened card and lead-card widths after side-by-side comparison.
 4. Removed visible native rail scrollbars after mobile inspection.
+5. Replaced the dark page canvas with the platform's pale lavender background and converted artwork entries into white cards with dark readable metadata.
 
 ## Final result
 

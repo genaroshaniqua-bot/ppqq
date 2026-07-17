@@ -72,17 +72,17 @@ export default async function CommissionsPage() {
   }));
 
   return (
-    <div className="-my-8 min-h-screen bg-[#1d1d29] text-white">
+    <div className="-my-8 min-h-screen bg-[#f7f6fb] text-ink">
       <div className="mx-auto max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <header className="flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a893ff]">Commission gallery</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">Commission gallery</p>
             <h1 className="mt-3 font-display text-4xl font-black tracking-[-0.035em] sm:text-6xl">从作品开始，找到合适画师</h1>
-            <p className="mt-4 max-w-2xl text-sm font-semibold leading-6 text-white/55">浏览画风后选择画师服务；还没有明确人选，也可以直接公开需求。</p>
+            <p className="mt-4 max-w-2xl text-sm font-semibold leading-6 text-muted">浏览画风后选择画师服务；还没有明确人选，也可以直接公开需求。</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link href="/create" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-lime px-5 text-sm font-black text-ink transition hover:bg-primary"><FilePlus2 size={16} aria-hidden="true" />发起约稿</Link>
-            <Link href="/profile/commissions" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white/8 px-5 text-sm font-black text-white transition hover:bg-white/14"><ListChecks size={16} aria-hidden="true" />我的约稿</Link>
+            <Link href="/profile/commissions" className="inline-flex min-h-11 items-center gap-2 rounded-pill border border-line bg-white px-5 text-sm font-black text-ink shadow-soft transition hover:border-primary hover:text-primary"><ListChecks size={16} aria-hidden="true" />我的约稿</Link>
           </div>
         </header>
 

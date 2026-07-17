@@ -59,7 +59,7 @@ export function ArtistWorkCommissionBrowser({ items }: { items: CommissionArtwor
 
       <div className="rail-scroll flex gap-2 overflow-x-auto pb-3" aria-label="作品分类">
         {categories.map((item) => (
-          <button key={item} type="button" aria-pressed={category === item} onClick={() => setCategory(item)} className={`min-h-12 shrink-0 rounded-[16px] px-5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 ${categoryColors[item] ?? categoryColors.其他} ${category === item ? "ring-2 ring-white ring-offset-2 ring-offset-[#1d1d29]" : "opacity-82 hover:opacity-100"}`}>
+          <button key={item} type="button" aria-pressed={category === item} onClick={() => setCategory(item)} className={`min-h-12 shrink-0 rounded-[16px] px-5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 ${categoryColors[item] ?? categoryColors.其他} ${category === item ? "ring-2 ring-ink ring-offset-2 ring-offset-[#f7f6fb]" : "opacity-82 hover:opacity-100"}`}>
             {item}
           </button>
         ))}
@@ -79,17 +79,17 @@ export function ArtistWorkCommissionBrowser({ items }: { items: CommissionArtwor
                 const curated = item.availability === "inspiration";
                 const href = curated ? `/create?service=${encodeURIComponent(item.normalizedCategory)}` : `/artists/${item.artistId}`;
                 return (
-                  <article key={item.id} className="group w-[210px] shrink-0">
+                  <article key={item.id} className="group w-[210px] shrink-0 rounded-[24px] border border-white bg-white p-2 shadow-soft transition hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg">
                     <Link href={href} aria-label={curated ? `以${item.title}为灵感发起约稿` : `查看${item.artistName}的${item.title}和约稿服务`} className="block">
-                      <div className="relative aspect-square overflow-hidden rounded-[20px] bg-white/8">
+                      <div className="relative aspect-square overflow-hidden rounded-[18px] bg-bg">
                         <div role="img" aria-label={item.visibility === "paid" ? `${item.title}的付费预览` : item.title} className={`absolute inset-0 bg-cover bg-center transition duration-300 group-hover:scale-[1.025] ${item.visibility === "paid" ? "scale-105 blur-md" : ""}`} style={{ backgroundImage: `url(${item.imageUrl})` }} />
                         {item.visibility === "paid" ? <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-pill bg-[#d52d83] px-2.5 py-1 text-[11px] font-black text-white"><LockKeyhole size={11} aria-hidden="true" />{item.accessPrice} 点解锁</span> : curated ? <span className="absolute left-2.5 top-2.5 rounded-pill bg-[#a96ce8] px-2.5 py-1 text-[11px] font-black text-white">灵感示例</span> : null}
-                        <span className="absolute right-2.5 top-2.5 grid size-9 place-items-center rounded-full bg-white/90 text-ink"><Bookmark size={15} aria-hidden="true" /></span>
+                        <span className="absolute right-2.5 top-2.5 grid size-9 place-items-center rounded-full border border-line/70 bg-white/92 text-ink shadow-sm"><Bookmark size={15} aria-hidden="true" /></span>
                       </div>
-                      <div className="px-1 pb-1 pt-3">
-                        <p className="flex items-center gap-1 text-xs font-black text-white/62">{!curated ? <BadgeCheck size={13} className="text-[#8e82ff]" aria-hidden="true" /> : null}{item.artistName}</p>
-                        <h4 className="mt-1 line-clamp-1 text-sm font-black text-white">{item.title}</h4>
-                        <div className="mt-2 flex items-baseline gap-2"><span className="text-base font-black text-white">{curated ? "发布相似需求" : `¥${item.startingPrice} 起`}</span>{!curated ? <span className="text-[11px] font-bold text-white/38">{item.serviceCount} 项服务</span> : null}</div>
+                      <div className="px-2 pb-2 pt-3">
+                        <p className="flex items-center gap-1 text-xs font-black text-muted">{!curated ? <BadgeCheck size={13} className="text-primary" aria-hidden="true" /> : null}{item.artistName}</p>
+                        <h4 className="mt-1 line-clamp-1 text-sm font-black text-ink">{item.title}</h4>
+                        <div className="mt-2 flex items-baseline gap-2"><span className="text-base font-black text-ink">{curated ? "发布相似需求" : `¥${item.startingPrice} 起`}</span>{!curated ? <span className="text-[11px] font-bold text-muted/70">{item.serviceCount} 项服务</span> : null}</div>
                       </div>
                     </Link>
                   </article>
