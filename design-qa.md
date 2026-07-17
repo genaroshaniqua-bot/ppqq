@@ -1,44 +1,39 @@
-# Design QA — 约稿作品陈列页
+# Design QA — 商城商品快速详情
 
 ## Visual truth
 
-- Reference: `C:/Users/d_jun/AppData/Local/Temp/codex-clipboard-22fa4eb9-3609-46ae-a4f7-05bf68b68d6c.png`
-- Implementation: `output/audits/2026-07-17-vgen-reference-commission.png`
-- Side-by-side comparison: `output/audits/2026-07-17-vgen-reference-comparison.jpg`
-- Reference viewport: 2048 × 1118
-- Verification viewport: 1265 × 710 (same wide-screen composition class)
-- State: signed-in personal user, `/commissions`, category `全部`
+- Reference: `C:/Users/d_jun/AppData/Local/Temp/codex-clipboard-6cc77ff8-9fab-4604-8275-5326b91c4198.png`
+- Implementation: `output/audits/2026-07-17-market-product-quick-view.png`
+- Side-by-side comparison: `output/audits/2026-07-17-market-product-quick-view-comparison.jpg`
+- Reference viewport: 2048 × 1152, normalized to 1280 × 720 for comparison
+- Verification viewport: 1280 × 720
+- State: signed-in personal user, `/market`, product quick view open
 
 ## Comparison findings
 
 ### Full-view comparison
 
-- The implementation preserves the reference's defining structure while adapting it to the product's light visual system: a pale lavender canvas, large editorial heading, dense colored category controls, category lead cards, and horizontally browsable square artwork cards.
-- The platform's existing white global navigation is intentionally preserved so the redesigned page remains consistent with the rest of 未名 and does not create a second navigation system.
-- Product copy and metadata are adapted to the commission workflow rather than copied from a digital-goods marketplace: real artist works open artist services, while curated inspiration clearly starts a similar request.
+- The implementation matches the reference interaction model: clicking a product keeps the marketplace visible behind a dimmed overlay and opens a large, focused product dialog.
+- The source page's dark palette is intentionally adapted to the platform's established pale lavender and white visual system, following the user's request to preserve the overall light background.
+- The same two-column hierarchy is retained: a dominant product gallery on the left and purchasing information on the right.
 
-### Focused component comparison
+### Focused modal details
 
-- Category controls use solid high-contrast colors and an explicit selected ring; their shape, density, and horizontal overflow behavior follow the reference.
-- Artwork cards use white elevated surfaces, square crops, top-left status labels, top-right bookmark affordances, compact creator/title metadata, and direct action-oriented footers.
-- Category rows use a colored lead card plus a compact scroll rail. Card widths were reduced from 245 px to 210 px and the lead card from 190 px to 170 px after comparison to improve information density.
+- The left gallery includes a large product image, thumbnail selection, descriptive caption, and a stable fallback using a real category illustration when the seller has not uploaded a cover.
+- The right panel includes creator identity, product type, title, rating, stock, price, personal-use rights, commercial-license guidance, quantity controls, bookmark state, cart CTA, and a link to the independent detail page.
+- Close behavior is available through the top-left close button, backdrop click, and Escape key. The dialog locks body scrolling while open.
+- Typography, spacing, radii, borders, and shadows follow the existing site tokens; the large title and price retain the emphasis visible in the reference without introducing a second visual language.
+- Image cropping uses `object-cover` within a contained gallery surface so both uploaded covers and fallback artwork remain legible.
+- Copy is rewritten for the platform's digital and physical product model instead of copying the reference marketplace wording.
 
-## Interaction and responsive QA
+## Interaction QA
 
-- Category filter: `海报` selection leaves only the `海报` section in the accessibility tree.
-- Primary CTAs: `发起约稿` routes to `/create`; `我的约稿` routes to `/profile/commissions`.
-- Artwork behavior: real works route to the artist profile; curated examples route to `/create?service=<category>`.
-- Paid preview behavior remains visually locked and displays its point cost.
-- Mobile 390 × 844: heading, CTAs, category pills, category lead card, artwork rail, and bottom navigation remain usable; horizontal rails hide native scrollbars while retaining touch scrolling.
-- Browser console: no error-level entries during the verified flow.
-
-## Iteration history
-
-1. Rebuilt the page around the reference's category-led shop hierarchy.
-2. Replaced generic lists with horizontal artwork rails backed by real portfolio data and clearly labeled curated inspiration.
-3. Tightened card and lead-card widths after side-by-side comparison.
-4. Removed visible native rail scrollbars after mobile inspection.
-5. Replaced the dark page canvas with the platform's pale lavender background and converted artwork entries into white cards with dark readable metadata.
+- Product cover and “快速查看” both open the dialog.
+- Quantity decrement and increment update the cart quantity without leaving the dialog.
+- Bookmark toggles between saved and unsaved states.
+- Cart CTA preserves the existing simulated checkout flow.
+- Independent detail link remains available for users who need complete product information.
+- Browser verification found no console errors in the tested flow.
 
 ## Final result
 

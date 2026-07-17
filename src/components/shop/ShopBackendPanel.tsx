@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CreditCard, Download, ExternalLink, ImagePlus, LoaderCircle, Minus, Package, Plus, RotateCcw, Send, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { Bookmark, CheckCircle2, CreditCard, Download, ExternalLink, ImagePlus, LoaderCircle, Minus, Package, Plus, RotateCcw, Send, ShieldCheck, ShoppingBag, Trash2, Truck, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AddressPanel, UserAddress } from "@/components/shop/AddressPanel";
@@ -19,7 +19,7 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<ShopOrder[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [selectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [downloadLinks, setDownloadLinks] = useState<Record<string, string>>({});
@@ -65,6 +65,15 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
   }, []);
 
   useEffect(() => { load().catch((error) => { setMessage(typeof error === "object" && error && "message" in error ? String(error.message) : "商品数据加载失败"); setLoading(false); }); }, [load]);
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setSelectedProduct(null); };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", closeOnEscape); };
+  }, [selectedProduct]);
 
   async function setQuantity(productId: string, quantity: number) {
     setSaving(true); setMessage("");
@@ -193,6 +202,7 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
   const showBuyer = view === "all" || view === "buyer";
   const showSeller = view === "all" || view === "seller";
   const filtered = products.filter((product) => product.is_active && (filter === "all" || product.kind === filter));
+  const selectedQuantity = selectedProduct ? cart.find((item) => item.product_id === selectedProduct.id)?.quantity ?? 0 : 0;
   const managedProducts = products.filter((product) => view === "admin" || product.seller_id === userId);
   const cartRows = cart.map((item) => ({ ...item, product: products.find((product) => product.id === item.product_id) })).filter((item) => item.product);
   const total = useMemo(() => cartRows.reduce((sum, item) => sum + Number(item.product?.price ?? 0) * item.quantity, 0), [cartRows]);
@@ -211,9 +221,23 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
     {showSeller || view === "admin" ? <section className="mb-6 rounded-card border border-line bg-white p-5 shadow-soft"><div className="flex items-center justify-between gap-3"><h2 className="font-display text-2xl font-black">{view === "admin" ? "商品内容管理" : "我的商品"}</h2><span className="rounded-pill bg-bg px-3 py-1 text-xs font-black text-muted">{managedProducts.length} 项</span></div><div className="mt-4 grid gap-3 md:grid-cols-2">{managedProducts.map((product) => <article key={product.id} className="rounded-[18px] bg-bg p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black text-primary">{product.kind === "digital" ? "数字商品" : "实体商品"}</p><h3 className="mt-1 font-display text-lg font-black">{product.title}</h3></div><span className={`rounded-pill px-3 py-1 text-xs font-black ${product.is_active ? "bg-lime text-ink" : "bg-line text-muted"}`}>{product.is_active ? "在售" : "已下架"}</span></div><div className="mt-3 flex items-center justify-between gap-3"><p className="text-sm font-black">¥{product.price}{product.stock !== null ? ` · 库存 ${product.stock}` : ""}</p><Button type="button" variant="secondary" disabled={saving} onClick={() => toggleProduct(product)}>{product.is_active ? "下架" : "重新上架"}</Button></div></article>)}{managedProducts.length === 0 ? <p className="text-sm font-semibold text-muted">暂无可管理商品。</p> : null}</div></section> : null}
     {showBuyer ? <div className="mb-6 flex gap-2 overflow-x-auto pb-1">{[["all","全部"],["digital","数字商品"],["physical","实体周边"]].map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value as typeof filter)} className={`min-h-11 shrink-0 rounded-pill px-4 text-sm font-black ${filter === value ? "bg-ink text-white" : "bg-white text-muted shadow-soft"}`}>{label}</button>)}</div> : null}
     {showBuyer ? <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-      <section className="grid gap-4 sm:grid-cols-2">{filtered.map((product) => { const quantity = cart.find((item) => item.product_id === product.id)?.quantity ?? 0; const DeliveryIcon = product.kind === "digital" ? Download : Truck; return <article key={product.id} className="group overflow-hidden rounded-card border border-line bg-white shadow-soft transition hover:-translate-y-0.5 hover:border-primary"><div className="relative aspect-[16/9] overflow-hidden bg-bg">{product.cover_url ? <div role="img" aria-label={`${product.title} 商品封面`} className="absolute inset-0 bg-cover bg-center transition duration-300 group-hover:scale-[1.03]" style={{ backgroundImage: `url(${product.cover_url})` }} /> : <div className="grid h-full place-items-center text-primary"><Package size={38} aria-hidden="true" /><span className="sr-only">暂无商品封面</span></div>}<span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-pill bg-white/92 px-3 py-1.5 text-xs font-black text-ink shadow-soft"><DeliveryIcon size={13} aria-hidden="true" />{product.kind === "digital" ? "数字交付" : "实体配送"}</span></div><div className="p-5"><p className="text-xs font-black text-purple">{product.seller_name}</p><h2 className="mt-1 font-display text-2xl font-black">{product.title}</h2><p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><Link href={`/market/${product.id}`} className="mt-3 inline-flex text-xs font-black text-purple">查看商品详情 →</Link><div className="mt-5 flex items-center justify-between gap-3"><span className="font-display text-2xl font-black">¥{product.price}</span>{quantity === 0 ? <Button type="button" disabled={saving} onClick={() => setQuantity(product.id, 1)}><ShoppingBag size={16} />加入购物车</Button> : <div className="flex items-center gap-2"><button aria-label={`减少-${product.title}`} disabled={saving} onClick={() => setQuantity(product.id, quantity - 1)} className="grid size-9 place-items-center rounded-pill bg-bg"><Minus size={15} /></button><span className="min-w-6 text-center font-black">{quantity}</span><button aria-label={`增加-${product.title}`} disabled={saving} onClick={() => setQuantity(product.id, quantity + 1)} className="grid size-9 place-items-center rounded-pill bg-bg"><Plus size={15} /></button></div>}</div>{product.stock !== null ? <p className="mt-3 text-xs font-bold text-muted">库存 {product.stock}</p> : <p className="mt-3 text-xs font-bold text-primary">即时数字交付 · 无库存限制</p>}</div></article>; })}</section>
-      <aside className="h-fit space-y-4 lg:sticky lg:top-24">{selectedProduct ? <section className="rounded-card border border-purple/20 bg-white p-5 shadow-soft"><p className="text-xs font-black uppercase text-purple">Product Detail</p><h2 className="mt-2 font-display text-2xl font-black">{selectedProduct.title}</h2><p className="mt-1 text-xs font-black text-purple">来自 {selectedProduct.seller_name}</p><p className="mt-3 text-sm font-semibold leading-6 text-muted">{selectedProduct.description}</p><div className="mt-4 flex items-center justify-between"><span className="font-display text-3xl font-black">¥{selectedProduct.price}</span><span className="rounded-pill bg-purple/10 px-3 py-1 text-xs font-black text-purple">{selectedProduct.kind === "digital" ? "即时数字交付" : `库存 ${selectedProduct.stock}`}</span></div></section> : null}<section className="rounded-card border border-line bg-white p-5 shadow-soft"><div className="flex items-center justify-between"><h2 className="font-display text-2xl font-black">购物车</h2><span className="rounded-pill bg-lime px-3 py-1 text-xs font-black">{cart.reduce((sum,item) => sum + item.quantity,0)} 件</span></div><div className="mt-4 space-y-3">{cartRows.map((item) => <div key={item.product_id} className="rounded-[18px] bg-bg p-3"><div className="flex justify-between gap-3"><p className="text-sm font-black">{item.product?.title}</p><button aria-label={`移除-${item.product?.title}`} onClick={() => setQuantity(item.product_id,0)}><Trash2 size={15} className="text-danger" /></button></div><p className="mt-2 text-xs font-bold text-muted">¥{item.product?.price} × {item.quantity}</p></div>)}{cartRows.length === 0 ? <p className="rounded-[18px] bg-bg px-4 py-7 text-center text-sm font-semibold text-muted">先浏览商品，再进入结算</p> : null}</div><div className="mt-5 flex items-center justify-between border-t border-line pt-4"><span className="text-sm font-black">合计</span><span className="font-display text-3xl font-black">¥{total}</span></div><Button type="button" disabled={saving || cartRows.length === 0} onClick={beginCheckout} className="mt-4 w-full"><CreditCard size={16} />进入结算</Button><p className="mt-3 text-xs font-semibold leading-5 text-muted">结算时才确认交付方式；数字商品无需填写收货地址。</p></section></aside>
+      <section className="grid gap-4 sm:grid-cols-2">
+        {filtered.map((product) => {
+          const quantity = cart.find((item) => item.product_id === product.id)?.quantity ?? 0;
+          const DeliveryIcon = product.kind === "digital" ? Download : Truck;
+          return <article key={product.id} className="group overflow-hidden rounded-card border border-line bg-white shadow-soft transition hover:-translate-y-0.5 hover:border-primary">
+            <button type="button" onClick={() => setSelectedProduct(product)} className="relative block aspect-[16/9] w-full overflow-hidden bg-bg text-left" aria-label={`快速查看 ${product.title}`}>
+              {product.cover_url ? <div role="img" aria-label={`${product.title} 商品封面`} className="absolute inset-0 bg-cover bg-center transition duration-300 group-hover:scale-[1.03]" style={{ backgroundImage: `url(${product.cover_url})` }} /> : <div className="grid h-full place-items-center text-primary"><Package size={38} aria-hidden="true" /><span className="sr-only">暂无商品封面</span></div>}
+              <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-pill bg-white/92 px-3 py-1.5 text-xs font-black text-ink shadow-soft"><DeliveryIcon size={13} aria-hidden="true" />{product.kind === "digital" ? "数字交付" : "实体配送"}</span>
+              <span className="absolute bottom-3 right-3 rounded-pill bg-ink/82 px-3 py-1.5 text-xs font-black text-white opacity-0 backdrop-blur transition group-hover:opacity-100">快速查看</span>
+            </button>
+            <div className="p-5"><p className="text-xs font-black text-purple">{product.seller_name}</p><h2 className="mt-1 font-display text-2xl font-black">{product.title}</h2><p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><div className="mt-3 flex items-center gap-3"><button type="button" onClick={() => setSelectedProduct(product)} className="text-xs font-black text-purple">快速查看</button><Link href={`/market/${product.id}`} className="text-xs font-black text-muted">独立详情页 →</Link></div><div className="mt-5 flex items-center justify-between gap-3"><span className="font-display text-2xl font-black">¥{product.price}</span>{quantity === 0 ? <Button type="button" disabled={saving} onClick={() => setQuantity(product.id, 1)}><ShoppingBag size={16} />加入购物车</Button> : <div className="flex items-center gap-2"><button aria-label={`减少-${product.title}`} disabled={saving} onClick={() => setQuantity(product.id, quantity - 1)} className="grid size-9 place-items-center rounded-pill bg-bg"><Minus size={15} /></button><span className="min-w-6 text-center font-black">{quantity}</span><button aria-label={`增加-${product.title}`} disabled={saving} onClick={() => setQuantity(product.id, quantity + 1)} className="grid size-9 place-items-center rounded-pill bg-bg"><Plus size={15} /></button></div>}</div>{product.stock !== null ? <p className="mt-3 text-xs font-bold text-muted">库存 {product.stock}</p> : <p className="mt-3 text-xs font-bold text-primary">即时数字交付 · 无库存限制</p>}</div>
+          </article>;
+        })}
+      </section>
+      <aside className="h-fit space-y-4 lg:sticky lg:top-24"><section className="rounded-card border border-line bg-white p-5 shadow-soft"><div className="flex items-center justify-between"><h2 className="font-display text-2xl font-black">购物车</h2><span className="rounded-pill bg-lime px-3 py-1 text-xs font-black">{cart.reduce((sum,item) => sum + item.quantity,0)} 件</span></div><div className="mt-4 space-y-3">{cartRows.map((item) => <div key={item.product_id} className="rounded-[18px] bg-bg p-3"><div className="flex justify-between gap-3"><p className="text-sm font-black">{item.product?.title}</p><button aria-label={`移除-${item.product?.title}`} onClick={() => setQuantity(item.product_id,0)}><Trash2 size={15} className="text-danger" /></button></div><p className="mt-2 text-xs font-bold text-muted">¥{item.product?.price} × {item.quantity}</p></div>)}{cartRows.length === 0 ? <p className="rounded-[18px] bg-bg px-4 py-7 text-center text-sm font-semibold text-muted">先浏览商品，再进入结算</p> : null}</div><div className="mt-5 flex items-center justify-between border-t border-line pt-4"><span className="text-sm font-black">合计</span><span className="font-display text-3xl font-black">¥{total}</span></div><Button type="button" disabled={saving || cartRows.length === 0} onClick={beginCheckout} className="mt-4 w-full"><CreditCard size={16} />进入结算</Button><p className="mt-3 text-xs font-semibold leading-5 text-muted">结算时才确认交付方式；数字商品无需填写收货地址。</p></section></aside>
     </div> : null}
+    {selectedProduct ? <ProductQuickView product={selectedProduct} quantity={selectedQuantity} saving={saving} onClose={() => setSelectedProduct(null)} onSetQuantity={setQuantity} /> : null}
     {showBuyer && checkoutOpen && cartRows.length > 0 ? <section id="shop-checkout" className="mt-7 scroll-mt-28 rounded-[30px] border border-lime bg-ink p-5 text-white shadow-soft sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-lime">Checkout</p><h2 className="mt-1 font-display text-3xl font-black">确认交付与模拟支付</h2><p className="mt-2 text-sm font-semibold text-white/62">本次共 {cart.reduce((sum, item) => sum + item.quantity, 0)} 件商品，合计 ¥{total}。</p></div><button type="button" onClick={() => setCheckoutOpen(false)} className="rounded-pill border border-white/16 px-4 py-2 text-xs font-black text-white">返回继续选购</button></div>{cartNeedsAddress ? <div className="mt-5 text-ink"><AddressPanel addresses={addresses} selectedId={selectedAddressId} saving={saving} onSelect={setSelectedAddressId} onCreate={createAddress} /></div> : <div className="mt-5 flex items-center gap-3 rounded-[18px] bg-white/8 p-4"><span className="grid size-10 place-items-center rounded-full bg-lime text-ink"><Download size={18} aria-hidden="true" /></span><div><p className="text-sm font-black">全部为数字商品</p><p className="mt-1 text-xs font-semibold text-white/58">付款后由画师通过订单安全交付文件，无需收货地址。</p></div></div>}<div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/12 pt-5"><div><p className="text-xs font-bold text-white/54">应付金额</p><p className="font-display text-4xl font-black text-lime">¥{total}</p></div><Button type="button" disabled={saving || (cartNeedsAddress && !selectedAddressId)} onClick={checkout}><CreditCard size={16} />确认模拟支付</Button></div></section> : null}
     <section className="mt-8 rounded-card border border-line bg-white p-5 shadow-soft">
       <div className="flex items-center gap-3"><CheckCircle2 className="text-primary" /><h2 className="font-display text-2xl font-black">商品订单明细与交付</h2></div>
@@ -231,6 +255,58 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
           <time className="mt-3 block text-xs font-semibold text-muted">{new Date(order.created_at).toLocaleString("zh-CN")}</time>
         </article>;
       })}{visibleOrders.length === 0 ? <p className="text-sm font-semibold text-muted">当前没有符合此工作区的商品订单。</p> : null}</div>
+    </section>
+  </div>;
+}
+
+function ProductQuickView({ product, quantity, saving, onClose, onSetQuantity }: { product: Product; quantity: number; saving: boolean; onClose: () => void; onSetQuantity: (productId: string, quantity: number) => Promise<void> }) {
+  const [saved, setSaved] = useState(false);
+  const DeliveryIcon = product.kind === "digital" ? Download : Truck;
+  const available = product.stock === null || quantity < product.stock;
+  const displayCover = product.cover_url || (product.kind === "digital" ? "/images/case-sheet.png" : "/images/marketplace-city.png");
+
+  return <div className="fixed inset-0 z-[80] bg-[#171622]/72 p-0 backdrop-blur-sm sm:p-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section role="dialog" aria-modal="true" aria-labelledby="quick-product-title" className="relative mx-auto grid h-full max-h-[920px] w-full max-w-[1320px] overflow-y-auto bg-[#f7f6fb] text-ink shadow-2xl sm:rounded-[30px] lg:grid-cols-[1.08fr_0.92fr]">
+      <button type="button" autoFocus onClick={onClose} aria-label="关闭商品详情" className="fixed left-4 top-4 z-[90] grid size-11 place-items-center rounded-full bg-ink text-white shadow-lg sm:absolute sm:left-5 sm:top-5"><X size={22} aria-hidden="true" /></button>
+
+      <div className="min-w-0 bg-[#eeedf5] p-4 pt-20 sm:p-8 sm:pt-20 lg:p-12 lg:pt-20">
+        <div className="relative aspect-square overflow-hidden rounded-[26px] border border-white bg-white shadow-soft">
+          <div role="img" aria-label={`${product.title} 商品大图`} className="absolute inset-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${displayCover})` }} />
+          {!product.cover_url ? <span className="absolute bottom-4 left-4 rounded-pill border border-white/70 bg-white/88 px-3 py-2 text-xs font-black text-muted shadow-soft backdrop-blur">商品暂未上传封面 · 展示分类示意图</span> : null}
+        </div>
+        <div className="mt-4 flex gap-3">
+          <button type="button" aria-label="查看商品主图" className="relative size-24 shrink-0 overflow-hidden rounded-[18px] border-2 border-ink bg-white">
+            <span className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${displayCover})` }} />
+          </button>
+          <div className="min-w-0 rounded-[18px] border border-line bg-white p-4"><p className="text-xs font-black text-primary">商品说明</p><p className="mt-1 line-clamp-3 text-sm font-semibold leading-6 text-muted">{product.description}</p></div>
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-col p-5 pt-20 sm:p-8 sm:pt-20 lg:p-12 lg:pt-20">
+        <div className="flex items-start justify-between gap-4">
+          <div><p className="text-sm font-black text-purple">{product.seller_name}</p><p className="mt-1 text-xs font-semibold text-muted">WEIMING 创作者</p></div>
+          <div className="flex gap-2"><button type="button" aria-pressed={saved} onClick={() => setSaved((value) => !value)} aria-label={saved ? "取消收藏" : "收藏商品"} className={`grid size-11 place-items-center rounded-full border ${saved ? "border-primary bg-primary text-white" : "border-line bg-white text-ink"}`}><Bookmark size={18} fill={saved ? "currentColor" : "none"} aria-hidden="true" /></button></div>
+        </div>
+
+        <span className="mt-8 inline-flex w-fit items-center gap-2 rounded-pill bg-pink px-3 py-2 text-xs font-black text-white"><DeliveryIcon size={14} aria-hidden="true" />{product.kind === "digital" ? "数字商品" : "实体周边"}</span>
+        <h2 id="quick-product-title" className="mt-4 font-display text-4xl font-black leading-tight tracking-[-0.03em] sm:text-5xl">{product.title}</h2>
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm font-bold text-muted"><span>★ 5.0</span><span>{product.stock === null ? "持续供应" : `库存 ${product.stock}`}</span></div>
+
+        <div className="mt-8 rounded-[22px] bg-white p-5 shadow-soft">
+          <p className="text-xs font-black text-muted">商品价格</p><p className="mt-1 font-display text-4xl font-black">¥{product.price}</p>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          <div className="flex items-center justify-between rounded-[18px] border border-primary/20 bg-primary/5 p-4"><div className="flex items-center gap-3"><span className="grid size-8 place-items-center rounded-full bg-primary text-white"><ShieldCheck size={16} /></span><div><p className="text-sm font-black">{product.kind === "digital" ? "个人使用与数字下载" : "个人使用与实体配送"}</p><p className="mt-1 text-xs font-semibold text-muted">已包含在商品价格中</p></div></div><span className="text-xs font-black text-primary">包括</span></div>
+          <div className="flex items-center justify-between rounded-[18px] border border-line bg-white p-4"><div><p className="text-sm font-black">商业使用授权</p><p className="mt-1 text-xs font-semibold text-muted">购买前请在独立详情页联系创作者确认</p></div><span className="text-xs font-black text-muted">另议</span></div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t border-line pt-5"><p className="text-sm font-black">购买数量</p><div className="flex items-center gap-3"><button type="button" aria-label="减少商品数量" disabled={saving || quantity <= 0} onClick={() => onSetQuantity(product.id, Math.max(0, quantity - 1))} className="grid size-10 place-items-center rounded-full bg-white disabled:opacity-35"><Minus size={16} /></button><span className="min-w-7 text-center font-black">{quantity}</span><button type="button" aria-label="增加商品数量" disabled={saving || !available} onClick={() => onSetQuantity(product.id, quantity + 1)} className="grid size-10 place-items-center rounded-full bg-white disabled:opacity-35"><Plus size={16} /></button></div></div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]"><Button type="button" disabled={saving || (!available && quantity === 0)} onClick={() => onSetQuantity(product.id, Math.max(1, quantity))} className="min-h-14 w-full bg-lime text-base text-ink hover:bg-primary"><ShoppingBag size={18} />{quantity > 0 ? "已加入购物车" : "加入购物车"}</Button><Link href={`/market/${product.id}`} className="inline-flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-5 text-sm font-black">完整详情<ExternalLink size={15} /></Link></div>
+
+        <div className="mt-7 rounded-[20px] border border-line bg-white p-4"><div className="flex items-center gap-3"><DeliveryIcon size={19} className="text-primary" /><div><p className="text-sm font-black">{product.kind === "digital" ? "付款后安全交付" : "确认地址后安排配送"}</p><p className="mt-1 text-xs font-semibold leading-5 text-muted">平台使用模拟支付，并在订单中记录交付与售后状态。</p></div></div></div>
+      </div>
     </section>
   </div>;
 }
