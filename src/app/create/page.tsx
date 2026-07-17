@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Coins, FileText, Globe2, Images, LoaderCircle, Save, Send, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, ClipboardList, Coins, FileText, Globe2, Images, LoaderCircle, Save, Sparkles, UserSearch } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
 import { Toast } from "@/components/ui/Toast";
 import { COMMISSION_DRAFT_STORAGE_KEY, type CommissionDraft } from "@/lib/commission-draft";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { TaskPathGuide } from "@/components/onboarding/TaskPathGuide";
 
 const requestCategories = ["OC 头像", "角色立绘", "Live2D", "表情 / 徽章", "摊宣 / 周边", "文案 / 剧情"];
 const licenseOptions = ["个人使用", "商业使用", "版权买断"];
@@ -145,11 +146,20 @@ export default function CreatePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <TaskPathGuide
+        eyebrow="发布前先选择路径"
+        title="一份需求，可以公开征集，也可以交给指定画师"
+        description="先把需求写完整，再决定发布方式。公开征集会展示响应人数和报价区间；指定约稿会带着草稿进入服务列表。两种方式都不会立即扣款。"
+        paths={[
+          { eyebrow: "适合还没选好画师", title: "公开征集方案", description: "需求通过检查后进入大厅。画师必须关联自己的服务或套餐才能响应，你最终只能选择一人。", steps: ["填写需求", "公开发布", "选择画师"], href: "#request-form", action: "开始填写需求", icon: Globe2, emphasis: "dark" },
+          { eyebrow: "适合已有喜欢的画师", title: "匹配指定服务", description: "先保存需求草稿，再从服务列表挑选画师与套餐，提交后等待对方确认范围和报价。", steps: ["保存草稿", "选择服务", "确认报价"], href: "/commissions", action: "先看画师服务", icon: UserSearch }
+        ]}
+      />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[28px] border border-white/75 bg-white/76 p-4 shadow-soft backdrop-blur-xl">
         <div className="flex flex-wrap gap-2">
           {[
-            ["1", "准备需求", "request-form"],
-            ["2", "需求预览", "request-preview"]
+            ["1", "填写需求", "request-form"],
+            ["2", "检查预览", "request-preview"]
           ].map(([key, label, target]) => (
             <button key={target} type="button" onClick={() => document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="inline-flex min-h-10 items-center gap-2 rounded-pill border border-line bg-white px-4 text-sm font-black text-ink transition hover:border-primary hover:bg-primary/10">
               <kbd className="grid size-5 place-items-center rounded bg-bg text-[11px] font-black text-muted">{key}</kbd>
@@ -167,9 +177,9 @@ export default function CreatePage() {
       <section className="mb-7 grid gap-6 rounded-[36px] border border-line bg-white p-6 shadow-soft md:p-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
         <div>
           <p className="text-xs font-black uppercase text-primary">Request workspace</p>
-          <h1 className="mt-2 font-display text-4xl font-black md:text-5xl">准备约稿需求</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">先整理服务类型、预算、交付节点和授权范围，再选择真实画师服务提交委托。</p>
-          <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-muted"><ClipboardList size={16} className="text-primary" aria-hidden="true" />提交前会进入真实服务选择页</span>
+          <h2 className="mt-2 font-display text-4xl font-black md:text-5xl">把画师真正需要的信息一次写清</h2>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">填写服务类型、预算、档期、授权与合作偏好。完成后再选择“公开征集”或“匹配指定服务”，不会因为填写表单而自动发布。</p>
+          <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-muted"><ClipboardList size={16} className="text-primary" aria-hidden="true" />高金额、商用授权或被举报的需求会进入人工审核</span>
         </div>
         <FeatureArtPanel src="/images/artwork/green-wedding.jpg" alt="绿色长发角色礼服插画委托样例" eyebrow="需求单目标" caption="先用成品方向说明风格、用途、档期和授权边界" className="min-h-[220px]" />
       </section>
@@ -211,7 +221,11 @@ export default function CreatePage() {
             </fieldset>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5"><Button type="button" variant="secondary" onClick={saveDraft}><Save size={16} aria-hidden="true" />保存草稿</Button><Button type="submit"><Send size={16} aria-hidden="true" />匹配指定服务</Button><Button type="button" disabled={publishing} onClick={publishPublicRequest} className="bg-lime text-ink hover:bg-primary"><Globe2 size={16} aria-hidden="true" />{publishing ? <><LoaderCircle size={15} className="animate-spin" />正在发布</> : "公开征集画师"}</Button></div>
+          <div className="mt-6 border-t border-line pt-5">
+            <p className="mb-3 text-sm font-black text-ink">填写完成后，选择下一步</p>
+            <div className="flex flex-wrap gap-3"><Button type="button" variant="secondary" onClick={saveDraft}><Save size={16} aria-hidden="true" />仅保存草稿</Button><Button type="submit"><UserSearch size={16} aria-hidden="true" />带着草稿找指定画师</Button><Button type="button" disabled={publishing} onClick={publishPublicRequest} className="bg-lime text-ink hover:bg-primary"><Globe2 size={16} aria-hidden="true" />{publishing ? <><LoaderCircle size={15} className="animate-spin" />正在发布</> : "确认并公开征集"}</Button></div>
+            <p className="mt-3 text-xs font-semibold leading-5 text-muted">公开征集：多位画师可以响应，最终只能选一人。指定约稿：只把需求发给你选择的服务提供者。</p>
+          </div>
         </form>
 
         <aside id="request-preview" className="scroll-mt-28 h-fit rounded-card border border-line bg-white p-5 shadow-soft lg:sticky lg:top-24">

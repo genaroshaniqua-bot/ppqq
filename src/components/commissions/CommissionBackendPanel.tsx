@@ -400,7 +400,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
   }
 
   return (
-    <section className="mt-7 rounded-[32px] border border-line bg-white p-5 shadow-soft sm:p-6" aria-labelledby="real-commission-heading">
+    <section id="commission-services" className="mt-7 scroll-mt-28 rounded-[32px] border border-line bg-white p-5 shadow-soft sm:p-6" aria-labelledby="real-commission-heading">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-wider text-primary">{showClient && !showArtist ? "Commission discovery" : "Supabase Commission"}</p>
