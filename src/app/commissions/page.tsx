@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, FilePlus2, Images, ListChecks } from "lucide-react";
+import { FilePlus2, ListChecks } from "lucide-react";
 import { ArtistWorkCommissionBrowser, type CommissionArtwork } from "@/components/commissions/ArtistWorkCommissionBrowser";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -44,38 +44,50 @@ export default async function CommissionsPage() {
       };
     });
 
+  const curated: CommissionArtwork[] = [
+    ["poster-01.jpg", "心动女仆日", "立绘", ["女仆", "角色"]],
+    ["poster-02.jpg", "午后苏打", "头像", ["日常", "清新"]],
+    ["poster-03.jpg", "星轨取景框", "海报", ["镜头", "城市"]],
+    ["poster-04.jpg", "银色双生", "立绘", ["双人", "幻想"]],
+    ["poster-05.jpg", "花嫁时刻", "立绘", ["礼服", "氛围"]],
+    ["poster-06.jpg", "霓虹晴日", "海报", ["街景", "潮流"]],
+    ["poster-07.jpg", "蓝色呼吸", "头像", ["运动", "夏日"]],
+    ["poster-08.jpg", "星球开场", "海报", ["网球", "活力"]],
+    ["poster-09.jpg", "深海来信", "设定", ["水族", "幻想"]],
+    ["poster-10.png", "星光魔法", "设定", ["魔法少女", "梦幻"]],
+    ["poster-11.png", "花境精灵", "头像", ["精灵", "柔光"]]
+  ].map(([file, title, category, tags], index) => ({
+    id: `curated-${index + 1}`,
+    artistId: "",
+    artistName: "未名精选灵感",
+    title: String(title),
+    imageUrl: `/images/lobby-posters/${file}`,
+    tags: tags as string[],
+    category: String(category),
+    visibility: "public",
+    accessPrice: 0,
+    serviceCount: 0,
+    startingPrice: 0,
+    availability: "inspiration"
+  }));
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Commission</p>
-          <h1 className="mt-1 font-display text-4xl font-black tracking-[-0.03em] sm:text-5xl">选择你的约稿方式</h1>
-          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-muted">直接发布需求，或先从作品判断画风，再进入画师主页选择服务。</p>
-        </div>
-        <Link href="/profile/commissions" className="inline-flex min-h-10 items-center gap-2 rounded-pill border border-line bg-white px-4 text-xs font-black text-muted shadow-soft transition hover:border-primary hover:text-ink">
-          <ListChecks size={15} aria-hidden="true" />查看我的约稿
-        </Link>
-      </header>
-
-      <section className="mt-6 grid gap-4 md:grid-cols-2" aria-label="约稿方式">
-        <Link href="/create" className="group flex min-h-[190px] flex-col justify-between rounded-[28px] bg-ink p-6 text-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-xl sm:p-7">
-          <span className="grid size-12 place-items-center rounded-full bg-lime text-ink"><FilePlus2 size={21} aria-hidden="true" /></span>
-          <div className="mt-8">
-            <p className="text-xs font-black text-lime">还没有决定画师</p>
-            <div className="mt-1 flex items-end justify-between gap-4"><div><h2 className="font-display text-3xl font-black">发起约稿</h2><p className="mt-2 text-sm font-semibold text-white/62">填写预算、档期和授权范围，公开征集画师方案。</p></div><ArrowRight className="mb-1 shrink-0 transition group-hover:translate-x-1" aria-hidden="true" /></div>
+    <div className="-my-8 min-h-screen bg-[#1d1d29] text-white">
+      <div className="mx-auto max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <header className="flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a893ff]">Commission gallery</p>
+            <h1 className="mt-3 font-display text-4xl font-black tracking-[-0.035em] sm:text-6xl">从作品开始，找到合适画师</h1>
+            <p className="mt-4 max-w-2xl text-sm font-semibold leading-6 text-white/55">浏览画风后选择画师服务；还没有明确人选，也可以直接公开需求。</p>
           </div>
-        </Link>
-
-        <Link href="#artist-work-browser" className="group flex min-h-[190px] flex-col justify-between rounded-[28px] border border-line bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:border-primary sm:p-7">
-          <span className="grid size-12 place-items-center rounded-full bg-primary/12 text-primary"><Images size={21} aria-hidden="true" /></span>
-          <div className="mt-8">
-            <p className="text-xs font-black text-primary">先确认画风是否合适</p>
-            <div className="mt-1 flex items-end justify-between gap-4"><div><h2 className="font-display text-3xl font-black">根据画师作品约稿</h2><p className="mt-2 text-sm font-semibold text-muted">浏览公开作品，进入画师主页查看服务与套餐。</p></div><ArrowRight className="mb-1 shrink-0 transition group-hover:translate-x-1" aria-hidden="true" /></div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/create" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-lime px-5 text-sm font-black text-ink transition hover:bg-primary"><FilePlus2 size={16} aria-hidden="true" />发起约稿</Link>
+            <Link href="/profile/commissions" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white/8 px-5 text-sm font-black text-white transition hover:bg-white/14"><ListChecks size={16} aria-hidden="true" />我的约稿</Link>
           </div>
-        </Link>
-      </section>
+        </header>
 
-      <ArtistWorkCommissionBrowser items={artworks} />
+        <ArtistWorkCommissionBrowser items={[...artworks, ...curated]} />
+      </div>
     </div>
   );
 }

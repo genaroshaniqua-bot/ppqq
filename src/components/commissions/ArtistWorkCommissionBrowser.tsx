@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, BadgeCheck, Images, LockKeyhole } from "lucide-react";
+import { ArrowRight, BadgeCheck, Bookmark, LockKeyhole } from "lucide-react";
 
 export type CommissionArtwork = {
   id: string;
@@ -19,14 +19,25 @@ export type CommissionArtwork = {
   availability: string;
 };
 
+const categoryColors: Record<string, string> = {
+  全部: "bg-[#a96ce8]",
+  头像: "bg-[#df75bd]",
+  立绘: "bg-[#7678df]",
+  Live2D: "bg-[#58ad9f]",
+  表情: "bg-[#d9659a]",
+  徽章: "bg-[#638fc9]",
+  海报: "bg-[#e09c61]",
+  周边: "bg-[#74b968]",
+  设定: "bg-[#b66fd4]",
+  其他: "bg-[#7476bf]"
+};
+
 const preferredCategories = ["全部", "头像", "立绘", "Live2D", "表情", "徽章", "海报", "周边", "设定"];
 
 function normalizeCategory(item: CommissionArtwork) {
   const text = `${item.category} ${item.tags.join(" ")}`.toLowerCase();
   if (text.includes("live2d")) return "Live2D";
-  for (const category of preferredCategories.slice(1)) {
-    if (text.includes(category.toLowerCase())) return category;
-  }
+  for (const category of preferredCategories.slice(1)) if (text.includes(category.toLowerCase())) return category;
   return item.category || "其他";
 }
 
@@ -35,55 +46,59 @@ export function ArtistWorkCommissionBrowser({ items }: { items: CommissionArtwor
   const categorized = useMemo(() => items.map((item) => ({ ...item, normalizedCategory: normalizeCategory(item) })), [items]);
   const categories = useMemo(() => {
     const available = new Set(categorized.map((item) => item.normalizedCategory));
-    const ordered = preferredCategories.filter((item) => item === "全部" || available.has(item));
-    const remaining = [...available].filter((item) => !ordered.includes(item));
-    return [...ordered, ...remaining];
+    return preferredCategories.filter((item) => item === "全部" || available.has(item));
   }, [categorized]);
-  const visible = category === "全部" ? categorized : categorized.filter((item) => item.normalizedCategory === category);
+  const sections = useMemo(() => {
+    const active = category === "全部" ? categories.filter((item) => item !== "全部") : [category];
+    return active.map((name) => ({ name, items: categorized.filter((item) => item.normalizedCategory === name) })).filter((section) => section.items.length > 0);
+  }, [categorized, categories, category]);
 
   return (
-    <section id="artist-work-browser" className="mt-10 scroll-mt-28" aria-labelledby="artist-work-heading">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Browse by artwork</p>
-          <h2 id="artist-work-heading" className="mt-1 font-display text-3xl font-black sm:text-4xl">根据作品找到画师</h2>
-          <p className="mt-2 text-sm font-semibold text-muted">浏览公开作品或付费作品预览；价格、档期和套餐以画师主页为准。</p>
-        </div>
-        <span className="rounded-pill bg-white px-4 py-2 text-xs font-black text-muted shadow-soft">{visible.length} 件可约稿作品</span>
-      </div>
+    <section id="artist-work-browser" className="mt-10" aria-labelledby="artist-work-heading">
+      <h2 id="artist-work-heading" className="sr-only">根据作品找到画师</h2>
 
-      <div className="mt-5 flex gap-2 overflow-x-auto pb-2" aria-label="作品分类">
+      <div className="rail-scroll flex gap-2 overflow-x-auto pb-3" aria-label="作品分类">
         {categories.map((item) => (
-          <button key={item} type="button" aria-pressed={category === item} onClick={() => setCategory(item)} className={`min-h-11 shrink-0 rounded-pill px-5 text-sm font-black transition ${category === item ? "bg-ink text-white" : "border border-line bg-white text-muted hover:border-primary hover:text-ink"}`}>
+          <button key={item} type="button" aria-pressed={category === item} onClick={() => setCategory(item)} className={`min-h-12 shrink-0 rounded-[16px] px-5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 ${categoryColors[item] ?? categoryColors.其他} ${category === item ? "ring-2 ring-white ring-offset-2 ring-offset-[#1d1d29]" : "opacity-82 hover:opacity-100"}`}>
             {item}
           </button>
         ))}
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {visible.map((item) => (
-          <article key={item.id} className="group overflow-hidden rounded-[24px] border border-line bg-white shadow-soft transition hover:-translate-y-0.5 hover:border-primary">
-            <Link href={`/artists/${item.artistId}`} aria-label={`查看${item.artistName}的作品${item.title}和约稿服务`} className="block">
-              <div className="relative aspect-[4/3] overflow-hidden bg-bg">
-                <div role="img" aria-label={item.visibility === "paid" ? `${item.title}的付费预览` : item.title} className={`absolute inset-0 bg-cover bg-center transition duration-300 group-hover:scale-[1.02] ${item.visibility === "paid" ? "scale-105 blur-md" : ""}`} style={{ backgroundImage: `url(${item.imageUrl})` }} />
-                {item.visibility === "paid" ? <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-pill bg-ink/82 px-3 py-1.5 text-[11px] font-black text-white backdrop-blur"><LockKeyhole size={12} aria-hidden="true" />{item.accessPrice} 点解锁完整作品</span> : null}
-              </div>
-              <div className="p-4">
-                <p className="flex items-center gap-1 text-xs font-black text-purple"><BadgeCheck size={13} aria-hidden="true" />{item.artistName}</p>
-                <h3 className="mt-1 line-clamp-1 font-display text-xl font-black">{item.title}</h3>
-                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black text-muted">
-                  <span className="rounded-pill bg-bg px-2.5 py-1">{item.normalizedCategory}</span>
-                  <span className="rounded-pill bg-bg px-2.5 py-1">{item.serviceCount} 项服务</span>
-                  <span className={`rounded-pill px-2.5 py-1 ${item.availability === "open" ? "bg-lime text-ink" : "bg-bg"}`}>{item.availability === "open" ? "开放约稿" : item.availability === "queue" ? "可排队" : "暂不接单"}</span>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-line pt-3"><span className="text-sm font-black">¥{item.startingPrice} 起</span><span className="inline-flex items-center gap-1 text-xs font-black text-primary">查看画师服务<ArrowRight size={13} aria-hidden="true" /></span></div>
-              </div>
-            </Link>
-          </article>
+      <div className="mt-6 space-y-7">
+        {sections.map((section) => (
+          <section key={section.name} aria-labelledby={`category-${section.name}`} className="grid gap-3 lg:grid-cols-[170px_minmax(0,1fr)]">
+            <aside className={`flex min-h-[255px] flex-col justify-end rounded-[24px] p-5 text-white ${categoryColors[section.name] ?? categoryColors.其他}`}>
+              <p className="text-xs font-black text-white/65">作品分类</p>
+              <h3 id={`category-${section.name}`} className="mt-1 font-display text-3xl font-black">{section.name}</h3>
+              <button type="button" onClick={() => setCategory(section.name)} className="mt-5 inline-flex min-h-10 w-fit items-center gap-2 rounded-pill bg-white px-4 text-xs font-black text-ink">查看全部<ArrowRight size={14} aria-hidden="true" /></button>
+            </aside>
+
+            <div className="rail-scroll flex gap-3 overflow-x-auto pb-3">
+              {section.items.map((item) => {
+                const curated = item.availability === "inspiration";
+                const href = curated ? `/create?service=${encodeURIComponent(item.normalizedCategory)}` : `/artists/${item.artistId}`;
+                return (
+                  <article key={item.id} className="group w-[210px] shrink-0">
+                    <Link href={href} aria-label={curated ? `以${item.title}为灵感发起约稿` : `查看${item.artistName}的${item.title}和约稿服务`} className="block">
+                      <div className="relative aspect-square overflow-hidden rounded-[20px] bg-white/8">
+                        <div role="img" aria-label={item.visibility === "paid" ? `${item.title}的付费预览` : item.title} className={`absolute inset-0 bg-cover bg-center transition duration-300 group-hover:scale-[1.025] ${item.visibility === "paid" ? "scale-105 blur-md" : ""}`} style={{ backgroundImage: `url(${item.imageUrl})` }} />
+                        {item.visibility === "paid" ? <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-pill bg-[#d52d83] px-2.5 py-1 text-[11px] font-black text-white"><LockKeyhole size={11} aria-hidden="true" />{item.accessPrice} 点解锁</span> : curated ? <span className="absolute left-2.5 top-2.5 rounded-pill bg-[#a96ce8] px-2.5 py-1 text-[11px] font-black text-white">灵感示例</span> : null}
+                        <span className="absolute right-2.5 top-2.5 grid size-9 place-items-center rounded-full bg-white/90 text-ink"><Bookmark size={15} aria-hidden="true" /></span>
+                      </div>
+                      <div className="px-1 pb-1 pt-3">
+                        <p className="flex items-center gap-1 text-xs font-black text-white/62">{!curated ? <BadgeCheck size={13} className="text-[#8e82ff]" aria-hidden="true" /> : null}{item.artistName}</p>
+                        <h4 className="mt-1 line-clamp-1 text-sm font-black text-white">{item.title}</h4>
+                        <div className="mt-2 flex items-baseline gap-2"><span className="text-base font-black text-white">{curated ? "发布相似需求" : `¥${item.startingPrice} 起`}</span>{!curated ? <span className="text-[11px] font-bold text-white/38">{item.serviceCount} 项服务</span> : null}</div>
+                      </div>
+                    </Link>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
         ))}
       </div>
-
-      {visible.length === 0 ? <div className="mt-4 rounded-[24px] border border-dashed border-line bg-white p-8 text-center"><Images className="mx-auto text-primary" /><p className="mt-3 font-display text-xl font-black">这个分类还没有可约稿作品</p><p className="mt-2 text-sm font-semibold text-muted">可以切换分类，或直接发布需求让画师响应。</p><Link href="/create" className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-pill bg-ink px-4 text-xs font-black text-white">发起约稿<ArrowRight size={14} /></Link></div> : null}
     </section>
   );
 }
