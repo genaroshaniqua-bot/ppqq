@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Heart, LoaderCircle, MapPin, ReceiptText, UserRound } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { IMPORTANT_NOTIFICATION_TYPES } from "@/lib/notifications";
 
 export function ProfileBackendStats({ characterCount }: { characterCount: number }) {
   const [values, setValues] = useState({ orders: 0, commissions: 0, addresses: 0, unread: 0 });
@@ -14,7 +15,7 @@ export function ProfileBackendStats({ characterCount }: { characterCount: number
       supabase.from("shop_orders").select("id", { count: "exact", head: true }),
       supabase.from("commission_requests").select("id", { count: "exact", head: true }),
       supabase.from("user_addresses").select("id", { count: "exact", head: true }),
-      supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null)
+      supabase.from("notifications").select("id", { count: "exact", head: true }).in("type", [...IMPORTANT_NOTIFICATION_TYPES]).is("read_at", null)
     ]).then(([orders, commissions, addresses, unread]) => {
       setValues({ orders: orders.count ?? 0, commissions: commissions.count ?? 0, addresses: addresses.count ?? 0, unread: unread.count ?? 0 });
       setLoading(false);

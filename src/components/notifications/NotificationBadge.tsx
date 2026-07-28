@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { IMPORTANT_NOTIFICATION_TYPES } from "@/lib/notifications";
 
 export function NotificationBadge({ compact = false }: { compact?: boolean }) {
   const [count, setCount] = useState(0);
@@ -9,7 +10,11 @@ export function NotificationBadge({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     let active = true;
     async function load() {
-      const { count: unread } = await createSupabaseBrowserClient().from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
+      const { count: unread } = await createSupabaseBrowserClient()
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .in("type", [...IMPORTANT_NOTIFICATION_TYPES])
+        .is("read_at", null);
       if (active) setCount(unread ?? 0);
     }
     load();

@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brush, LayoutDashboard, Palette, Settings2, ShieldCheck } from "lucide-react";
+import { Brush, LayoutDashboard, Palette, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/profile", label: "总览", icon: LayoutDashboard, exact: true },
   { href: "/profile/settings", label: "账户资料", icon: Settings2 },
   { href: "/profile/artist-application", label: "画师入驻", icon: Brush },
-  { href: "/profile/appearance", label: "外观设置", icon: Palette },
-  { href: "/trust", label: "隐私、举报与申诉", icon: ShieldCheck }
+  { href: "/profile/appearance", label: "外观设置", icon: Palette }
 ];
 
 export function ProfileHubNav() {

@@ -4,6 +4,7 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { RoleWorkspaceProvider } from "@/components/auth/RoleWorkspaceProvider";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { FeatureAgreementGate } from "@/components/legal/FeatureAgreementGate";
 
 export const metadata: Metadata = {
   title: "WEIMING | 原创角色共创与约稿平台",
@@ -35,6 +36,7 @@ export default function RootLayout({
             跳到主要内容
           </a>
           <SiteHeader />
+          <FeatureAgreementGate />
           <main id="main-content" className="min-h-dvh pb-24 pt-20 md:pb-0">
             {children}
           </main>
