@@ -132,7 +132,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
     const artistIds = [...new Set((serviceRows ?? []).map((service) => service.artist_id))];
     let profileRows: Array<{ id: string; display_name: string }> = [];
     if (artistIds.length) {
-      const { data, error } = await supabase.from("profiles").select("id, display_name").in("id", artistIds);
+      const { data, error } = await supabase.from("public_profiles").select("id, display_name").in("id", artistIds);
       if (error) throw error;
       profileRows = data ?? [];
     }

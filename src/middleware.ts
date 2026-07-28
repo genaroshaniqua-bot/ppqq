@@ -67,8 +67,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/profile?apply=artist", request.url));
     }
   } catch {
-    // 页面级权限守卫继续兜底；瞬时网络波动不应直接把页面变成 500。
-    return response;
+    if (publicPath(request.nextUrl.pathname)) return response;
+    return new NextResponse("身份与权限服务暂时不可用，请稍后重试。", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" }
+    });
   }
 
   return response;

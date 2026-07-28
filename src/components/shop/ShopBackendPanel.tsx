@@ -6,6 +6,7 @@ import { Bookmark, CheckCircle2, CreditCard, Download, ExternalLink, ImagePlus, 
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AddressPanel, UserAddress } from "@/components/shop/AddressPanel";
+import { resolveProductCover } from "@/lib/portfolio-media";
 
 type Product = { id: string; seller_id: string; title: string; description: string; kind: "digital" | "physical" | "custom"; price: number; cover_url: string | null; stock: number | null; is_active: boolean; seller_name?: string };
 type CartItem = { product_id: string; quantity: number };
@@ -47,11 +48,16 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
     if (loadError) throw loadError;
     const sellerIds = [...new Set((productRows ?? []).map((product) => product.seller_id))];
     const { data: sellerRows, error: sellerError } = sellerIds.length
-      ? await supabase.from("profiles").select("id, display_name").in("id", sellerIds)
+      ? await supabase.from("public_profiles").select("id, display_name").in("id", sellerIds)
       : { data: [], error: null };
     if (sellerError) throw sellerError;
     const sellerNames = new Map((sellerRows ?? []).map((seller) => [seller.id, seller.display_name]));
-    setProducts((productRows ?? []).map((product) => ({ ...product, seller_name: sellerNames.get(product.seller_id) ?? "WEIMING 创作者" })) as Product[]);
+    const displayProducts = await Promise.all((productRows ?? []).map(async (product) => ({
+      ...product,
+      cover_url: await resolveProductCover(supabase, product.cover_url),
+      seller_name: sellerNames.get(product.seller_id) ?? "WEIMING 创作者"
+    })));
+    setProducts(displayProducts as Product[]);
     setCart((cartRows ?? []) as CartItem[]);
     setOrders((orderRows ?? []) as ShopOrder[]);
     setOrderItems((itemRows ?? []) as OrderItem[]);
@@ -147,9 +153,9 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
       if (coverFile.size > 10 * 1024 * 1024) { setSaving(false); setMessage("商品封面不能超过 10MB"); return; }
       const extension = coverFile.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${userId}/products/${crypto.randomUUID()}.${extension}`;
-      const { error: uploadError } = await supabase.storage.from("portfolios").upload(path, coverFile, { contentType: coverFile.type, upsert: false });
+      const { error: uploadError } = await supabase.storage.from("product-media").upload(path, coverFile, { contentType: coverFile.type, upsert: false });
       if (uploadError) { setSaving(false); setMessage(uploadError.message); return; }
-      coverUrl = supabase.storage.from("portfolios").getPublicUrl(path).data.publicUrl;
+      coverUrl = supabase.storage.from("product-media").getPublicUrl(path).data.publicUrl;
     }
     const { error } = await supabase.rpc("publish_shop_product", {
       product_title: String(form.get("title") ?? ""), product_description: String(form.get("description") ?? ""),

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FilePlus2, ListChecks } from "lucide-react";
 import { ArtistWorkCommissionBrowser, type CommissionArtwork } from "@/components/commissions/ArtistWorkCommissionBrowser";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { lockedPortfolioPreview, resolvePortfolioImage } from "@/lib/portfolio-media";
 
 export default async function CommissionsPage() {
   const supabase = await createSupabaseServerClient();
@@ -14,7 +15,7 @@ export default async function CommissionsPage() {
   const approved = new Map((approvedRows ?? []).map((artist) => [artist.user_id, artist.availability]));
   const serviceArtistIds = [...new Set((serviceRows ?? []).map((service) => service.artist_id))];
   const { data: profileRows } = serviceArtistIds.length
-    ? await supabase.from("profiles").select("id,display_name").in("id", serviceArtistIds)
+    ? await supabase.from("public_profiles").select("id,display_name").in("id", serviceArtistIds)
     : { data: [] };
   const profileMap = new Map((profileRows ?? []).map((profile) => [profile.id, profile.display_name]));
   const servicesByArtist = new Map<string, Array<{ id: string; service_type: string; base_price: number }>>();
@@ -24,16 +25,16 @@ export default async function CommissionsPage() {
     servicesByArtist.set(service.artist_id, current);
   }
 
-  const artworks: CommissionArtwork[] = (portfolioRows ?? [])
+  const artworks: CommissionArtwork[] = await Promise.all((portfolioRows ?? [])
     .filter((item) => approved.has(item.artist_id) && servicesByArtist.has(item.artist_id))
-    .map((item) => {
+    .map(async (item) => {
       const services = servicesByArtist.get(item.artist_id) ?? [];
       return {
         id: item.id,
         artistId: item.artist_id,
         artistName: profileMap.get(item.artist_id) ?? "未名画师",
         title: item.title,
-        imageUrl: item.image_url,
+        imageUrl: item.visibility === "public" ? await resolvePortfolioImage(supabase, item.image_url) : lockedPortfolioPreview,
         tags: item.tags ?? [],
         category: item.category || services[0]?.service_type || "其他",
         visibility: item.visibility,
@@ -42,7 +43,7 @@ export default async function CommissionsPage() {
         startingPrice: Math.min(...services.map((service) => service.base_price)),
         availability: approved.get(item.artist_id) ?? "open"
       };
-    });
+    }));
 
   const curated: CommissionArtwork[] = [
     ["poster-01.jpg", "心动女仆日", "立绘", ["女仆", "角色"]],

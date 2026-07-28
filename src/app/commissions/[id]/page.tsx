@@ -4,6 +4,7 @@ import { ArrowLeft, BadgeCheck, CalendarDays, Clock3, MessageSquareText, ShieldC
 import { ServiceRequestPanel, type ServicePackage } from "@/components/commissions/ServiceRequestPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UserAvatar } from "@/components/profile/UserAvatar";
+import { resolvePortfolioImage } from "@/lib/portfolio-media";
 
 export default async function CommissionServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,12 +13,16 @@ export default async function CommissionServiceDetailPage({ params }: { params: 
   if (!service) notFound();
 
   const [{ data: profile }, { data: artist }, { data: packageRows }, { data: portfolios }, { data: reviews }] = await Promise.all([
-    supabase.from("profiles").select("display_name, avatar_url, bio").eq("id", service.artist_id).single(),
+    supabase.from("public_profiles").select("display_name, avatar_url, bio").eq("id", service.artist_id).single(),
     supabase.from("artist_profiles").select("headline, introduction, availability, response_time_hours, review_status").eq("user_id", service.artist_id).single(),
     supabase.from("service_packages").select("id, tier, title, description, price, delivery_days, revision_limit, features").eq("service_id", service.id).eq("is_active", true).order("position"),
     supabase.from("portfolios").select("id, title, image_url, tags").eq("artist_id", service.artist_id).eq("visibility", "public").order("created_at", { ascending: false }).limit(4),
     supabase.from("artist_reviews").select("id, rating, body, created_at").eq("artist_id", service.artist_id).order("created_at", { ascending: false }).limit(3)
   ]);
+  const displayPortfolios = await Promise.all((portfolios ?? []).map(async (item) => ({
+    ...item,
+    image_url: await resolvePortfolioImage(supabase, item.image_url)
+  })));
   const averageRating = reviews?.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : null;
 
   return (
@@ -47,7 +52,7 @@ export default async function CommissionServiceDetailPage({ params }: { params: 
         </aside>
       </div>
 
-      {portfolios?.length ? <section className="mt-7"><h2 className="font-display text-3xl font-black">相关作品</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{portfolios.map((item) => <article key={item.id} className="overflow-hidden rounded-[22px] border border-line bg-white shadow-soft"><div role="img" aria-label={item.title} className="aspect-[4/3] bg-bg bg-cover bg-center" style={{ backgroundImage: `url(${item.image_url})` }} /><div className="p-4"><p className="font-display text-lg font-black">{item.title}</p><p className="mt-1 text-xs font-bold text-muted">{item.tags.join(" · ")}</p></div></article>)}</div></section> : null}
+      {displayPortfolios.length ? <section className="mt-7"><h2 className="font-display text-3xl font-black">相关作品</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{displayPortfolios.map((item) => <article key={item.id} className="overflow-hidden rounded-[22px] border border-line bg-white shadow-soft"><div role="img" aria-label={item.title} className="aspect-[4/3] bg-bg bg-cover bg-center" style={{ backgroundImage: `url(${item.image_url})` }} /><div className="p-4"><p className="font-display text-lg font-black">{item.title}</p><p className="mt-1 text-xs font-bold text-muted">{item.tags.join(" · ")}</p></div></article>)}</div></section> : null}
     </div>
   );
 }

@@ -6,8 +6,9 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Eye, ImagePlus, LoaderCircle, LockKeyhole, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { portfolioObjectPath, resolvePortfolioImage } from "@/lib/portfolio-media";
 
-type PortfolioItem = { id: string; title: string; image_url: string; tags: string[]; category: string; visibility: "public" | "paid"; access_price: number; created_at: string };
+type PortfolioItem = { id: string; title: string; image_url: string; media_reference?: string; tags: string[]; category: string; visibility: "public" | "paid"; access_price: number; created_at: string };
 
 const categories = ["头像", "立绘", "插画", "海报", "角色设定", "Live2D", "表情徽章", "Q版", "场景", "漫画", "服装设计", "周边设计", "像素画", "3D模型", "其他"];
 const quickTags = ["头像", "立绘", "半身", "全身", "海报", "厚涂", "赛璐璐", "Q版", "Live2D", "表情", "场景", "漫画", "像素画", "3D", "商用", "原创角色"];
@@ -29,7 +30,12 @@ export function PortfolioManager() {
     if (!user) { setMessage("请先登录后管理作品集"); setLoading(false); return; }
     const { data, error } = await supabase.from("portfolios").select("id,title,image_url,tags,category,visibility,access_price,created_at").eq("artist_id", user.id).order("created_at", { ascending: false });
     if (error) throw error;
-    setUserId(user.id); setItems((data ?? []) as PortfolioItem[]); setLoading(false);
+    const signedItems = await Promise.all(((data ?? []) as PortfolioItem[]).map(async (item) => ({
+      ...item,
+      media_reference: item.image_url,
+      image_url: await resolvePortfolioImage(supabase, item.image_url)
+    })));
+    setUserId(user.id); setItems(signedItems); setLoading(false);
   }, []);
 
   useEffect(() => { load().catch((error) => { setMessage(error instanceof Error ? error.message : "作品集加载失败"); setLoading(false); }); }, [load]);
@@ -53,6 +59,7 @@ export function PortfolioManager() {
     const form = new FormData(formElement);
     const urlInput = String(form.get("imageUrl") ?? "").trim();
     if (!file && !urlInput) { setMessage("请选择本地图片，或填写可访问的图片地址。"); return; }
+    if (visibility === "paid" && !file) { setMessage("付费作品必须上传本地原图，外部图片地址无法提供安全访问控制。"); return; }
     if (file && !file.type.startsWith("image/")) { setMessage("请选择 JPG、PNG、WebP 等图片文件。"); return; }
     if (file && file.size > 10 * 1024 * 1024) { setMessage("作品图片不能超过 10MB。"); return; }
     setSaving(true); setMessage("");
@@ -63,7 +70,7 @@ export function PortfolioManager() {
       const path = `${userId}/portfolio/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await supabase.storage.from("portfolios").upload(path, file, { contentType: file.type, upsert: false });
       if (uploadError) { setSaving(false); setMessage(uploadError.message); return; }
-      imageUrl = supabase.storage.from("portfolios").getPublicUrl(path).data.publicUrl;
+      imageUrl = path;
     }
     const manualTags = String(form.get("tags") ?? "").split(/[,，、\n]/).map((tag) => tag.trim()).filter(Boolean);
     const tags = [...new Set([...selectedTags, ...manualTags])].slice(0, 8);
@@ -77,9 +84,11 @@ export function PortfolioManager() {
   async function removeItem(item: PortfolioItem) {
     if (!window.confirm(`确认从作品集中移除“${item.title}”吗？`)) return;
     setSaving(true); setMessage("");
-    const { error } = await createSupabaseBrowserClient().from("portfolios").delete().eq("id", item.id);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.from("portfolios").delete().eq("id", item.id);
     setSaving(false);
     if (error) { setMessage(error.message); return; }
+    if (item.media_reference) await supabase.storage.from("portfolios").remove([portfolioObjectPath(item.media_reference)]);
     setMessage("作品已移除"); await load();
   }
 

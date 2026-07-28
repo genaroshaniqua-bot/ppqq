@@ -53,6 +53,7 @@ export function SiteHeader() {
   const isAdminArea = pathname.startsWith("/admin");
   const isAdminContext = isAdminArea || accountRole === "admin";
   const isArtistArea = pathname === "/artist" || pathname.startsWith("/artist/");
+  const accountHref = accountRole ? "/profile" : `/login?next=${encodeURIComponent(pathname)}`;
   const navItems = isAdminContext
     ? adminNavItems
     : isArtistArea || (workspace === "artist" && artistWorkspaceAvailable)
@@ -143,11 +144,11 @@ export function SiteHeader() {
           <span className="text-xs font-bold">搜索画师、标签或服务</span>
         </div>
         <Link
-          href="/profile"
+          href={accountHref}
           className="hidden min-h-12 items-center justify-center gap-2 rounded-pill border border-line bg-white/72 px-4 text-sm font-black text-[#6f6870] transition hover:border-primary hover:bg-white hover:text-[#171722] md:inline-flex"
         >
           {isAdminContext ? <ShieldCheck size={20} aria-hidden="true" /> : isArtistArea || (workspace === "artist" && artistWorkspaceAvailable) ? <Brush size={20} aria-hidden="true" /> : <Crown size={20} aria-hidden="true" />}
-          {isAdminContext ? "管理员" : isArtistArea || (workspace === "artist" && artistWorkspaceAvailable) ? "画师身份" : "个人身份"}
+          {!accountRole ? "登录" : isAdminContext ? "管理员" : isArtistArea || (workspace === "artist" && artistWorkspaceAvailable) ? "画师身份" : "个人身份"}
         </Link>
         <Link
           href="/profile/notifications"
@@ -158,7 +159,7 @@ export function SiteHeader() {
           <NotificationBadge />
         </Link>
         <Link
-          href="/profile"
+          href={accountHref}
           className="hidden size-12 place-items-center rounded-full shadow-soft transition hover:scale-[1.03] md:grid"
           aria-label="打开用户中心并更改头像"
         >
@@ -177,7 +178,7 @@ export function SiteHeader() {
             <UserRound size={16} aria-hidden="true" />切换身份
           </Link>
         )}
-        <Link href="/profile" className="ml-auto grid size-12 place-items-center rounded-pill border border-line bg-white/72 md:hidden" aria-label="打开用户中心">
+        <Link href={accountHref} className="ml-auto grid size-12 place-items-center rounded-pill border border-line bg-white/72 md:hidden" aria-label={accountRole ? "打开用户中心" : "登录"}>
           <UserRound size={21} aria-hidden="true" />
         </Link>
       </div>

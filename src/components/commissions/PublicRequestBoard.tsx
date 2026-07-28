@@ -73,7 +73,7 @@ export function PublicRequestBoard({ view }: { view: "client" | "artist" }) {
           return { ...item, service_title: serviceRelation?.title, package_title: packageRelation?.title } as ResponseItem;
         });
         const artistIds = [...new Set(baseResponses.map((item) => item.artist_id))];
-        const { data: profiles } = artistIds.length > 0 ? await supabase.from("profiles").select("id,display_name").in("id", artistIds) : { data: [] };
+        const { data: profiles } = artistIds.length > 0 ? await supabase.from("public_profiles").select("id,display_name").in("id", artistIds) : { data: [] };
         setResponses(baseResponses.map((item) => ({ ...item, artist_name: profiles?.find((profile) => profile.id === item.artist_id)?.display_name ?? "已审核画师" })));
       } else setResponses([]);
     }
