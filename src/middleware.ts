@@ -1,7 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const publicPath = (pathname: string) => pathname === "/login" || pathname === "/lobby" || pathname.startsWith("/artists/");
+const publicPath = (pathname: string) =>
+  pathname === "/login" ||
+  pathname === "/lobby" ||
+  pathname === "/trust" ||
+  pathname.startsWith("/legal/") ||
+  pathname.startsWith("/artists/");
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -53,6 +58,8 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/profile") ||
       pathname.startsWith("/artists/") ||
       pathname === "/lobby" ||
+      pathname === "/trust" ||
+      pathname.startsWith("/legal/") ||
       pathname === "/login";
 
     if (profile?.role === "admin" && !adminAllowedPath) {

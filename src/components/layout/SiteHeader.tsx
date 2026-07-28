@@ -36,6 +36,7 @@ const adminNavItems = [
   { href: "/admin/services", label: "服务审核" },
   { href: "/admin/requests", label: "需求审核" },
   { href: "/admin/disputes", label: "委托争议" },
+  { href: "/admin/trust", label: "信任安全" },
   { href: "/admin/shop", label: "商品订单" },
   { href: "/admin/audit", label: "审计" }
 ];
@@ -44,7 +45,8 @@ const profileNavItems = [
   { href: "/profile/commissions", label: "我的委托" },
   { href: "/profile/orders", label: "商品订单" },
   { href: "/profile/addresses", label: "收货地址" },
-  { href: "/profile/notifications", label: "消息通知" }
+  { href: "/profile/notifications", label: "消息通知" },
+  { href: "/trust", label: "安全与权利" }
 ];
 
 export function SiteHeader() {

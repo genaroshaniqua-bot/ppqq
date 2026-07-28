@@ -19,7 +19,8 @@ export type Capability =
   | "admin.userManage"
   | "admin.serviceModerate"
   | "admin.shopManage"
-  | "admin.auditRead";
+  | "admin.auditRead"
+  | "admin.trustReview";
 
 const userCapabilities: Capability[] = [
   "account.manage",
@@ -46,7 +47,8 @@ const adminCapabilities: Capability[] = [
   "admin.userManage",
   "admin.serviceModerate",
   "admin.shopManage",
-  "admin.auditRead"
+  "admin.auditRead",
+  "admin.trustReview"
 ];
 
 export const ROLE_WORKSPACE_STORAGE_KEY = "oc-forge-active-workspace";

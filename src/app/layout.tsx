@@ -3,6 +3,7 @@ import "./globals.css";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { RoleWorkspaceProvider } from "@/components/auth/RoleWorkspaceProvider";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export const metadata: Metadata = {
   title: "WEIMING | 原创角色共创与约稿平台",
@@ -37,6 +38,7 @@ export default function RootLayout({
           <main id="main-content" className="min-h-dvh pb-24 pt-20 md:pb-0">
             {children}
           </main>
+          <SiteFooter />
           <MobileBottomNav />
         </RoleWorkspaceProvider>
       </body>

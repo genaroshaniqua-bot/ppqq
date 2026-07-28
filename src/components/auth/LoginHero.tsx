@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Brush, LoaderCircle, LockKeyhole, Mail, UserRound } from "lucide-react";
@@ -16,6 +17,7 @@ import { ROLE_WORKSPACE_STORAGE_KEY, type WorkspaceRole } from "@/lib/auth/roles
 
 const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4";
+const PENDING_LEGAL_CONSENT_KEY = "weiming-pending-legal-consent-2026-07-28";
 
 export function LoginHero() {
   const router = useRouter();
@@ -64,6 +66,13 @@ export function LoginHero() {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
+    const acceptedLegal = form.get("accepted_legal") === "on";
+
+    if (mode === "register" && !acceptedLegal) {
+      setAuthMessage({ type: "error", text: "注册前请阅读并同意用户协议与隐私政策。" });
+      setIsSigningIn(false);
+      return;
+    }
 
     try {
       const supabase = createSupabaseBrowserClient();
@@ -77,6 +86,7 @@ export function LoginHero() {
         if (error) throw error;
 
         if (!data.session) {
+          window.localStorage.setItem(PENDING_LEGAL_CONSENT_KEY, email.toLowerCase());
           setAuthMessage({ type: "success", text: "注册成功，请前往邮箱完成验证后登录。" });
           return;
         }
@@ -87,6 +97,23 @@ export function LoginHero() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("登录状态未建立，请重试。");
+
+      const pendingConsentEmail = window.localStorage.getItem(PENDING_LEGAL_CONSENT_KEY);
+      if (mode === "register" || pendingConsentEmail === email.toLowerCase()) {
+        const { data: documents } = await supabase
+          .from("legal_documents")
+          .select("id, document_type")
+          .in("document_type", ["terms", "privacy"])
+          .eq("is_active", true);
+        if (documents?.length) {
+          const { error: consentError } = await supabase.from("legal_consents").upsert(
+            documents.map((document) => ({ user_id: user.id, document_id: document.id })),
+            { onConflict: "user_id,document_id", ignoreDuplicates: true }
+          );
+          if (consentError) throw new Error(`协议同意记录保存失败：${consentError.message}`);
+          window.localStorage.removeItem(PENDING_LEGAL_CONSENT_KEY);
+        }
+      }
 
       if (mode === "register" && entryRole === "artist") {
         await supabase.from("artist_profiles").upsert({
@@ -322,6 +349,19 @@ export function LoginHero() {
                 </>
               )}
             </button>
+
+            {mode === "register" ? (
+              <label className="mt-4 flex items-start gap-3 rounded-[14px] border border-white/15 bg-white/[0.06] p-3 text-xs font-semibold leading-5 text-white/66">
+                <input name="accepted_legal" type="checkbox" required className="mt-1 size-4 accent-lime" />
+                <span>
+                  我已阅读并同意
+                  <Link href="/legal/terms" target="_blank" className="mx-1 font-black text-lime underline">用户服务协议</Link>
+                  和
+                  <Link href="/legal/privacy" target="_blank" className="mx-1 font-black text-lime underline">隐私政策</Link>
+                  。协议版本与同意时间将被记录。
+                </span>
+              </label>
+            ) : null}
 
             {authMessage ? (
               <p

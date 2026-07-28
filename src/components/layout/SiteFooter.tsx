@@ -1,0 +1,22 @@
+import Link from "next/link";
+
+export function SiteFooter() {
+  return (
+    <footer className="border-t border-line bg-white">
+      <div className="mx-auto grid max-w-7xl gap-5 px-4 py-8 text-sm sm:px-6 md:grid-cols-[1fr_auto] lg:px-8">
+        <div>
+          <p className="font-black text-ink">WEIMING · 未名原创角色平台</p>
+          <p className="mt-2 max-w-2xl text-xs font-semibold leading-6 text-muted">
+            真实支付暂未开放。协议文本为产品上线准备稿，正式商业运营前须由中国大陆执业律师结合经营主体与实际数据流程复核。
+          </p>
+        </div>
+        <nav aria-label="法律与安全" className="flex flex-wrap items-start gap-x-5 gap-y-3 font-bold text-muted">
+          <Link href="/trust" className="hover:text-ink">信任与安全</Link>
+          <Link href="/legal/terms" className="hover:text-ink">用户协议</Link>
+          <Link href="/legal/privacy" className="hover:text-ink">隐私政策</Link>
+          <Link href="/legal/copyright" className="hover:text-ink">版权保护</Link>
+        </nav>
+      </div>
+    </footer>
+  );
+}

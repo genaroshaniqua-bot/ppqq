@@ -39,7 +39,7 @@ const adminItems = [
   { href: "/admin/services", label: "服务", icon: Brush },
   { href: "/admin/disputes", label: "争议", icon: Store },
   { href: "/admin/shop", label: "订单", icon: ShoppingBag },
-  { href: "/admin/audit", label: "审计", icon: MessageCircle }
+  { href: "/admin/trust", label: "安全", icon: ShieldCheck }
 ];
 
 export function MobileBottomNav() {

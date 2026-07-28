@@ -20,8 +20,14 @@ async function run() {
   assert.equal(login.status, 200, `/login 应返回 200，实际为 ${login.status}`);
   results.push("/login → 200");
 
-  for (const path of ["/home", "/commissions", "/market", "/profile", "/artist", "/admin"]) {
+  for (const path of ["/home", "/commissions", "/market", "/profile", "/artist", "/admin", "/admin/trust"]) {
     results.push(await expectRedirectToLogin(path));
+  }
+
+  for (const path of ["/trust", "/legal/terms", "/legal/privacy", "/legal/copyright"]) {
+    const response = await request(path);
+    assert.equal(response.status, 200, `${path} 应可公开访问，实际为 ${response.status}`);
+    results.push(`${path} → 公开访问正常`);
   }
 
   const publicArtist = await request("/artists/00000000-0000-0000-0000-000000000000");
