@@ -3,6 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const publicPath = (pathname: string) =>
   pathname === "/login" ||
+  pathname === "/forgot-password" ||
+  pathname === "/reset-password" ||
+  pathname.startsWith("/auth/") ||
   pathname === "/lobby" ||
   pathname === "/trust" ||
   pathname === "/api/health" ||

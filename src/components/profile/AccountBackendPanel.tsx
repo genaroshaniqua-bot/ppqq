@@ -204,21 +204,21 @@ export function AccountBackendPanel({ section = "all" }: { section?: "all" | "ac
     setSaving(true);
     setMessage("");
     const form = new FormData(event.currentTarget);
-    const payload = {
-      user_id: profile.id,
-      headline: String(form.get("headline") ?? "").trim(),
-      introduction: String(form.get("introduction") ?? "").trim(),
-      review_status: "pending" as const,
-      availability: "open"
-    };
+    const headline = String(form.get("headline") ?? "").trim();
+    const introduction = String(form.get("introduction") ?? "").trim();
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.from("artist_profiles").upsert(payload, { onConflict: "user_id" });
+    const { data, error } = await supabase
+      .rpc("submit_artist_application", {
+        application_headline: headline,
+        application_introduction: introduction
+      })
+      .single();
     setSaving(false);
     if (error) {
       setMessage(error.message);
       return;
     }
-    setArtist(payload);
+    setArtist(data as ArtistProfile);
     setMessage("画师入驻申请已提交");
     await refreshRole();
   }

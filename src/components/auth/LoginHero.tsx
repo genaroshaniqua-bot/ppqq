@@ -332,6 +332,17 @@ export function LoginHero() {
               />
             </div>
 
+            {mode === "login" ? (
+              <div className="mt-3 flex justify-end">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-bold text-white/65 underline-offset-4 transition hover:text-lime hover:underline"
+                >
+                  忘记密码？
+                </Link>
+              </div>
+            ) : null}
+
             <button
               type="submit"
               disabled={isSigningIn}
