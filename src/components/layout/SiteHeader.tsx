@@ -113,7 +113,10 @@ export function SiteHeader() {
 
   return (
     <header className="marketplace-header fixed inset-x-0 top-0 z-40 border-b border-white/70 bg-white/80 text-[#171722] shadow-[0_10px_32px_rgba(35,50,95,0.1)] backdrop-blur-xl">
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <div className={cn(
+        "mx-auto flex h-20 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8",
+        isAdminContext && "max-w-[1720px] gap-3"
+      )}>
         <Link href="/home" className="flex min-h-12 items-center gap-3 rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
           <BrandMark className="h-12 w-10 drop-shadow-[0_10px_18px_rgba(18,16,22,0.12)]" />
           <span className="hidden leading-none sm:block">
@@ -122,7 +125,13 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav aria-label="主导航" className="hidden items-stretch gap-7 self-stretch md:flex lg:gap-9">
+        <nav
+          aria-label="主导航"
+          className={cn(
+            "hidden items-stretch gap-7 self-stretch md:flex lg:gap-9",
+            isAdminContext && "rail-scroll min-w-0 flex-1 gap-2 overflow-x-auto lg:gap-3"
+          )}
+        >
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
@@ -130,7 +139,8 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex min-h-11 items-center text-sm font-black text-[#171722]/62 transition hover:text-[#171722] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#171722]",
+                  "relative flex min-h-11 shrink-0 items-center whitespace-nowrap text-sm font-black text-[#171722]/62 transition hover:text-[#171722] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#171722]",
+                  isAdminContext && "px-2 text-[13px] lg:px-2.5",
                   active && "text-[#171722] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-pill after:bg-lime"
                 )}
                 aria-current={active ? "page" : undefined}
@@ -141,13 +151,19 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="ml-auto hidden min-h-12 flex-1 max-w-md items-center gap-3 rounded-pill border border-line bg-white/72 px-4 text-muted lg:flex">
+        <div className={cn(
+          "ml-auto hidden min-h-12 flex-1 max-w-md items-center gap-3 rounded-pill border border-line bg-white/72 px-4 text-muted lg:flex",
+          isAdminContext && "ml-0 max-w-[168px] flex-none px-3"
+        )}>
           <Search size={18} aria-hidden="true" />
-          <span className="text-xs font-bold">搜索画师、标签或服务</span>
+          <span className={cn("text-xs font-bold", isAdminContext && "truncate")}>搜索画师、标签或服务</span>
         </div>
         <Link
           href={accountHref}
-          className="hidden min-h-12 items-center justify-center gap-2 rounded-pill border border-line bg-white/72 px-4 text-sm font-black text-[#6f6870] transition hover:border-primary hover:bg-white hover:text-[#171722] md:inline-flex"
+          className={cn(
+            "hidden min-h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-pill border border-line bg-white/72 px-4 text-sm font-black text-[#6f6870] transition hover:border-primary hover:bg-white hover:text-[#171722] md:inline-flex",
+            isAdminContext && "px-3 text-xs"
+          )}
         >
           {isAdminContext ? <ShieldCheck size={20} aria-hidden="true" /> : isArtistArea || (workspace === "artist" && artistWorkspaceAvailable) ? <Brush size={20} aria-hidden="true" /> : <Crown size={20} aria-hidden="true" />}
           {!accountRole ? "登录" : isAdminContext ? "管理员" : isArtistArea || (workspace === "artist" && artistWorkspaceAvailable) ? "画师身份" : "个人身份"}
@@ -167,7 +183,7 @@ export function SiteHeader() {
         >
           <UserAvatar src={avatarUrl} name={displayName} className="size-12 ring-2 ring-white" />
         </Link>
-        {accountRole === "admin" ? (
+        {accountRole === "admin" && !isAdminArea ? (
           <Link href="/admin" className="hidden min-h-12 items-center justify-center gap-2 rounded-pill bg-ink px-5 text-xs font-black text-white xl:inline-flex">
             <ShieldCheck size={16} aria-hidden="true" />管理工作台
           </Link>
