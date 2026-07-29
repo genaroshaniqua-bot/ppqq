@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Boxes, BriefcaseBusiness, CircleAlert, ClipboardCheck, FileClock, PackageCheck, ShieldCheck, ShoppingBag, UsersRound } from "lucide-react";
+import { Activity, ArrowRight, BadgeCheck, Boxes, BriefcaseBusiness, CircleAlert, ClipboardCheck, FileClock, PackageCheck, ShieldCheck, ShoppingBag, UsersRound } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
 
@@ -31,6 +31,7 @@ export default async function AdminDashboardPage() {
     { href: "/admin/services", title: "画师服务审核", detail: "服务说明、定价与下架记录", icon: BriefcaseBusiness },
     { href: "/admin/requests", title: "公开需求审核", detail: "高金额、商用、买断与举报处理", icon: ClipboardCheck },
     { href: "/admin/shop", title: "商品与商城订单", detail: "商品、履约和模拟退款", icon: ShoppingBag },
+    { href: "/admin/operations", title: "运维与客服", detail: "健康检查、告警、工单和灾备演练", icon: Activity },
     { href: "/admin/audit", title: "操作审计", detail: "管理员操作与治理记录", icon: FileClock }
   ];
 

@@ -38,6 +38,7 @@ const adminNavItems = [
   { href: "/admin/disputes", label: "委托争议" },
   { href: "/admin/trust", label: "信任安全" },
   { href: "/admin/shop", label: "商品订单" },
+  { href: "/admin/operations", label: "运维客服" },
   { href: "/admin/audit", label: "审计" }
 ];
 

@@ -20,9 +20,17 @@ async function run() {
   assert.equal(login.status, 200, `/login 应返回 200，实际为 ${login.status}`);
   results.push("/login → 200");
 
-  for (const path of ["/home", "/commissions", "/market", "/profile", "/artist", "/admin", "/admin/trust"]) {
+  for (const path of ["/home", "/commissions", "/market", "/profile", "/support", "/artist", "/admin", "/admin/trust", "/admin/operations"]) {
     results.push(await expectRedirectToLogin(path));
   }
+
+  const health = await request("/api/health");
+  assert.equal(health.status, 200, `/api/health 应返回 200，实际为 ${health.status}`);
+  const healthBody = await health.json();
+  assert.equal(healthBody.status, "ok", `/api/health 数据库检查应为 ok，实际为 ${healthBody.status}`);
+  assert.equal(healthBody.services?.database, "up", "数据库健康状态应为 up");
+  assert.equal(health.headers.get("cache-control"), "no-store", "健康检查不得被缓存");
+  results.push("/api/health → 应用与数据库健康");
 
   for (const path of ["/trust", "/legal/terms", "/legal/privacy", "/legal/copyright"]) {
     const response = await request(path);

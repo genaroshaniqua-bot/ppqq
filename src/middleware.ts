@@ -5,6 +5,7 @@ const publicPath = (pathname: string) =>
   pathname === "/login" ||
   pathname === "/lobby" ||
   pathname === "/trust" ||
+  pathname === "/api/health" ||
   pathname.startsWith("/legal/") ||
   pathname.startsWith("/artists/");
 
@@ -59,6 +60,7 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/artists/") ||
       pathname === "/lobby" ||
       pathname === "/trust" ||
+      pathname === "/support" ||
       pathname.startsWith("/legal/") ||
       pathname === "/login";
 

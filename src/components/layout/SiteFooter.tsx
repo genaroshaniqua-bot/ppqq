@@ -11,6 +11,7 @@ export function SiteFooter() {
           </p>
         </div>
         <nav aria-label="法律与安全" className="flex flex-wrap items-start gap-x-5 gap-y-3 font-bold text-muted">
+          <Link href="/support" className="hover:text-ink">客服中心</Link>
           <Link href="/trust" className="hover:text-ink">信任与安全</Link>
           <Link href="/legal/terms" className="hover:text-ink">用户协议</Link>
           <Link href="/legal/privacy" className="hover:text-ink">隐私政策</Link>
