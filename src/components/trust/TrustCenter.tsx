@@ -24,6 +24,7 @@ type TrustCase = {
 };
 
 const legalCards = [
+  { href: "/legal/operator", title: "经营主体信息", text: "营业执照、注册地址、客服与备案信息", icon: ShieldCheck },
   { href: "/legal/terms", title: "用户服务协议", text: "账户、平台服务、用户行为与终止规则", icon: FileCheck2 },
   { href: "/legal/privacy", title: "隐私政策", text: "信息处理范围、保存期限与您的权利", icon: LockKeyhole },
   { href: "/legal/creator-agreement", title: "画师服务规则", text: "服务、交付、授权与创作者责任", icon: Scale },

@@ -10,6 +10,7 @@ import { useRoleWorkspace } from "@/components/auth/RoleWorkspaceProvider";
 import type { WorkspaceRole } from "@/lib/auth/roles";
 import { UserAvatar } from "@/components/profile/UserAvatar";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { ArtistIdentityVerification } from "@/components/profile/ArtistIdentityVerification";
 
 type Profile = {
   id: string;
@@ -328,6 +329,8 @@ export function AccountBackendPanel({ section = "all" }: { section?: "all" | "ac
           {profile.role === "admin" ? <Link href="/admin/artists" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-lime px-5 py-3 text-sm font-black text-ink"><ShieldCheck size={16} />画师审核</Link> : null}
         </div>
       </form> : null}
+
+      {section !== "account" ? <ArtistIdentityVerification /> : null}
 
       {section !== "account" ? <form onSubmit={submitArtistApplication} className="rounded-card border border-line bg-white p-5 shadow-soft sm:p-6 lg:col-span-2">
         <div className="flex items-start justify-between gap-4">

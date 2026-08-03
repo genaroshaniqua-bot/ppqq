@@ -20,7 +20,7 @@ async function run() {
   assert.equal(login.status, 200, `/login 应返回 200，实际为 ${login.status}`);
   results.push("/login → 200");
 
-  for (const path of ["/home", "/commissions", "/market", "/profile", "/support", "/artist", "/admin", "/admin/trust", "/admin/operations"]) {
+  for (const path of ["/home", "/commissions", "/market", "/profile", "/support", "/artist", "/admin", "/admin/trust", "/admin/operations", "/admin/compliance"]) {
     results.push(await expectRedirectToLogin(path));
   }
 
@@ -32,7 +32,7 @@ async function run() {
   assert.equal(health.headers.get("cache-control"), "no-store", "健康检查不得被缓存");
   results.push("/api/health → 应用与数据库健康");
 
-  for (const path of ["/trust", "/legal/terms", "/legal/privacy", "/legal/copyright"]) {
+  for (const path of ["/trust", "/legal/terms", "/legal/privacy", "/legal/copyright", "/legal/operator"]) {
     const response = await request(path);
     assert.equal(response.status, 200, `${path} 应可公开访问，实际为 ${response.status}`);
     results.push(`${path} → 公开访问正常`);
