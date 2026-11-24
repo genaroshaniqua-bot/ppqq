@@ -11,17 +11,20 @@
     "verify:environment": "node scripts/verify-environment.mjs",
     "test:security": "node scripts/security-regression.mjs",
     "test:account-storage": "node scripts/account-storage-regression.mjs",
-    "test:middleware": "node scripts/middleware-regression.mjs"
+    "test:middleware": "node scripts/middleware-regression.mjs",
+    "test:ai": "node scripts/ai-regression.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.2",
+    "ai": "^7.0.179",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "^15.5.21",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.5.5"
+    "tailwind-merge": "^2.5.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.17",

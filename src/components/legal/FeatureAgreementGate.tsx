@@ -31,6 +31,8 @@ function requiredDocuments(pathname: string) {
   if (
     pathname === "/create" ||
     pathname === "/studio" ||
+    pathname === "/chat" ||
+    pathname.startsWith("/characters/") ||
     pathname.startsWith("/artist/portfolio") ||
     pathname.startsWith("/artist/products")
   ) {
@@ -38,6 +40,8 @@ function requiredDocuments(pathname: string) {
   }
   if (
     pathname === "/studio" ||
+    pathname === "/chat" ||
+    pathname.startsWith("/characters/") ||
     pathname.startsWith("/artist/portfolio") ||
     pathname.startsWith("/artist/products")
   ) {

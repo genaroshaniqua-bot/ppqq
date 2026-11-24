@@ -6,6 +6,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, Package, Sparkles } from "lucide-react";
 import { CharacterCard } from "@/components/character/CharacterCard";
+import { GenerationModePicker, type GenerationMode } from "@/components/generation/GenerationMode";
+import { requestAi } from "@/lib/ai/client";
 import { ContinuationCard } from "@/components/generation/ContinuationCard";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
@@ -18,6 +20,9 @@ export default function CharacterDetailPage() {
   const { characters, loading, error, refresh } = useCharacters();
   const [generated, setGenerated] = useState<CharacterContinuation | null>(null);
   const [toast, setToast] = useState("");
+  const [mode, setMode] = useState<GenerationMode>("template");
+  const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState("");
 
   useEffect(() => {
     if (!toast) return;
@@ -26,6 +31,25 @@ export default function CharacterDetailPage() {
   }, [toast]);
 
   const character = useMemo(() => characters.find((item) => item.id === params.id), [characters, params.id]);
+
+  async function continueCreation(kind: "story" | "dialogue" | "avatar" | "merch") {
+    if (!character || generating) return;
+    setGenerating(true);
+    setGenerated(null);
+    setGenerationError("");
+    try {
+      if (mode === "ai" && (kind === "story" || kind === "dialogue")) {
+        const result = await requestAi({ kind, character, characterId: character.id });
+        if (!result.continuation) throw new Error("AI 未返回完整内容，请重试。");
+        setGenerated({ ...result.continuation, title: `AI · ${result.continuation.title}` });
+        if (result.warning) setToast(result.warning);
+      } else {
+        const result = kind === "story" ? generateStory(character) : kind === "dialogue" ? generateDialogue(character) : kind === "avatar" ? generateAvatarPrompt(character) : generateMerch(character);
+        setGenerated({ ...result, title: `模板 · ${result.title}` });
+      }
+    } catch (cause) { setGenerationError(cause instanceof Error ? cause.message : "生成失败，请重试。"); }
+    finally { setGenerating(false); }
+  }
 
   async function copyCharacter() {
     if (!character) return;
@@ -106,27 +130,30 @@ export default function CharacterDetailPage() {
               <div>
                 <p className="text-xs font-black uppercase text-primary">Continue Creation</p>
                 <h2 className="mt-1 font-display text-2xl font-black">基于角色继续生成</h2>
-                <p className="mt-2 text-sm leading-6 text-muted">当前为模板演示，尚未接入 AI。结果可复制，用作设定集、约稿说明或摊宣准备的参考。</p>
+                <p className="mt-2 text-sm leading-6 text-muted">剧情与对话支持选择 AI 或模板；头像提示词和周边说明仍使用模板。结果可复制。</p>
               </div>
               <Sparkles className="hidden text-primary sm:block" size={28} aria-hidden="true" />
             </div>
+            <div className="mt-4"><GenerationModePicker value={mode} onChange={setMode} disabled={generating} /></div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <Button type="button" variant="secondary" onClick={() => setGenerated(generateStory(character))}>
+              <Button type="button" variant="secondary" disabled={generating} onClick={() => void continueCreation("story")}>
                 剧情生成
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setGenerated(generateDialogue(character))}>
+              <Button type="button" variant="secondary" disabled={generating} onClick={() => void continueCreation("dialogue")}>
                 对话风格
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setGenerated(generateAvatarPrompt(character))}>
+              <Button type="button" variant="secondary" disabled={generating} onClick={() => void continueCreation("avatar")}>
                 头像提示词
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setGenerated(generateMerch(character))}>
+              <Button type="button" variant="secondary" disabled={generating} onClick={() => void continueCreation("merch")}>
                 <Package size={17} aria-hidden="true" />
                 周边说明
               </Button>
             </div>
           </section>
 
+          {generating ? <p role="status" className="text-sm font-bold">正在生成，请稍候…</p> : null}
+          {generationError ? <p role="alert" className="text-sm text-danger">{generationError}</p> : null}
           {generated ? <ContinuationCard item={generated} onCopy={copyGenerated} /> : null}
         </div>
       </section>

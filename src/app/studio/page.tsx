@@ -22,6 +22,8 @@ import {
   Wand2
 } from "lucide-react";
 import { CharacterResult } from "@/components/character/CharacterResult";
+import { GenerationModePicker, type GenerationMode } from "@/components/generation/GenerationMode";
+import { requestAi } from "@/lib/ai/client";
 import { ContinuationCard } from "@/components/generation/ContinuationCard";
 import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
 import { Button } from "@/components/ui/Button";
@@ -45,6 +47,7 @@ type GenerationRow = {
   generation_type: string;
   result: { character?: Character; continuation?: CharacterContinuation } | null;
   status: string;
+  prompt?: { mode?: string };
   created_at: string;
 };
 
@@ -79,6 +82,11 @@ function StudioWorkspace() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [draftReady, setDraftReady] = useState(false);
+  const [mode, setMode] = useState<GenerationMode>("template");
+  const [resultMode, setResultMode] = useState<GenerationMode>("template");
+  const [continuationBusy, setContinuationBusy] = useState(false);
+  const [continuationError, setContinuationError] = useState("");
+  const busy = status === "loading" || continuationBusy || saving;
 
   const progress = useMemo(() => {
     if (status === "loading") return 1;
@@ -120,7 +128,7 @@ function StudioWorkspace() {
       if (!user) return;
       const { data, error: historyError } = await supabase
         .from("ai_generations")
-        .select("id, character_id, generation_type, result, status, created_at")
+        .select("id, character_id, generation_type, result, status, prompt, created_at")
         .eq("owner_id", user.id)
         .eq("status", "succeeded")
         .order("created_at", { ascending: false })
@@ -177,6 +185,7 @@ function StudioWorkspace() {
   }
 
   async function handleGenerate() {
+    if (busy) return;
     if (!input.inspiration.trim()) {
       setStatus("error");
       setError("请先输入一句角色灵感，例如“会收集雨声的旧校舍守夜人”。");
@@ -190,36 +199,60 @@ function StudioWorkspace() {
     setContinuationKind(null);
     setSavedCharacterId(null);
     setGenerationId(null);
-    await new Promise((resolve) => window.setTimeout(resolve, 520));
-    const nextCharacter = generateCharacter(input);
-    setCharacter(nextCharacter);
-    setStatus("result");
-
+    setContinuationError("");
+    setCharacter(null);
     try {
-      const nextGenerationId = await recordGeneration("character", { ...input }, { character: nextCharacter });
-      setGenerationId(nextGenerationId);
-      setCloudStatus("synced");
+      if (mode === "ai") {
+        const result = await requestAi({ kind: "character", input });
+        if (!result.character) throw new Error("AI 未返回完整角色，请重试。");
+        setCharacter(result.character);
+        setGenerationId(result.generationId);
+        setResultMode("ai");
+        setCloudStatus(result.warning ? "offline" : "synced");
+        if (result.warning) setToast(result.warning);
+      } else {
+        const nextCharacter = generateCharacter(input);
+        setCharacter(nextCharacter);
+        setResultMode("template");
+        try {
+          setGenerationId(await recordGeneration("character", { ...input }, { character: nextCharacter }));
+          setCloudStatus("synced");
+        } catch {
+          setCloudStatus("offline");
+          setToast("模板角色已生成；云端记录暂未同步，可继续保存到角色库");
+        }
+      }
+      setStatus("result");
       await loadHistory();
-    } catch {
-      setCloudStatus("offline");
-      setToast("角色已生成；云端记录暂未同步，可继续保存到角色库");
+    } catch (cause) {
+      setStatus("error");
+      setCloudStatus("idle");
+      setError(cause instanceof Error ? cause.message : "生成失败，请重试。");
     }
   }
 
   async function handleContinuation(kind: ContinuationKind) {
-    if (!character) return;
+    if (!character || busy) return;
+    setContinuationBusy(true);
+    setContinuationError("");
     setContinuationKind(kind);
-    const next = kind === "story" ? generateStory(character) : kind === "dialogue" ? generateDialogue(character) : generateAvatarPrompt(character);
-    setContinuation(next);
-    setCloudStatus("syncing");
+    setContinuation(null);
     try {
-      await recordGeneration(kind, { character_name: character.name, character }, { continuation: next }, savedCharacterId);
-      setCloudStatus("synced");
+      if (mode === "ai" && kind !== "avatar") {
+        const result = await requestAi({ kind, character, ...(savedCharacterId ? { characterId: savedCharacterId } : {}) });
+        if (!result.continuation) throw new Error("AI 未返回完整内容，请重试。");
+        setContinuation({ ...result.continuation, title: `AI · ${result.continuation.title}` });
+        if (result.warning) setToast(result.warning);
+      } else {
+        const next = kind === "story" ? generateStory(character) : kind === "dialogue" ? generateDialogue(character) : generateAvatarPrompt(character);
+        setContinuation({ ...next, title: `模板 · ${next.title}` });
+        try { await recordGeneration(kind, { character_name: character.name, character }, { continuation: next }, savedCharacterId); }
+        catch { setToast("模板结果已生成，但云端记录暂未同步"); }
+      }
       await loadHistory();
-    } catch {
-      setCloudStatus("offline");
-      setToast("扩写结果已生成，但云端记录暂未同步");
-    }
+    } catch (cause) {
+      setContinuationError(cause instanceof Error ? cause.message : "扩写失败，请重试。");
+    } finally { setContinuationBusy(false); }
   }
 
   async function copyCharacter() {
@@ -229,7 +262,7 @@ function StudioWorkspace() {
   }
 
   async function handleSave() {
-    if (!character || saving) return;
+    if (!character || busy) return;
     if (savedCharacterId) {
       setToast("这个角色已经保存到角色库");
       return;
@@ -295,6 +328,7 @@ function StudioWorkspace() {
     const restored = row.result?.character;
     if (!restored) return;
     setCharacter(restored);
+    setResultMode(row.prompt?.mode === "ai" ? "ai" : "template");
     setInput((current) => ({
       ...current,
       inspiration: restored.summary,
@@ -324,12 +358,12 @@ function StudioWorkspace() {
               </span>
             </div>
             <h1 className="mt-5 max-w-3xl font-display text-4xl font-black tracking-[-0.04em] sm:text-5xl">把一句灵感，推进成能继续创作的角色资产。</h1>
-            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-white/62">当前为免费模板演示，尚未接入 AI 服务。可生成示例设定并保存到自己的角色库；结果由固定模板组合，不代表 AI 生成。</p>
+            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-white/62">选择模板演示或真实 AI，生成人设后继续扩写剧情和对话，再保存到自己的角色库。头像提示仍为模板，图片为展示素材。</p>
           </div>
           <div className="space-y-3">
             <FeatureArtPanel src="/images/studio-character-creation.png" alt="画师在数位屏上绘制原创幻想角色" eyebrow="从灵感到角色资产" caption="人设、配色、立绘和周边方向在同一个创作现场持续推进" className="min-h-[210px]" priority />
             <div className="flex flex-wrap justify-end gap-2">
-              <button type="button" onClick={resetDraft} className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white/10 px-4 text-sm font-black transition hover:bg-white/16"><RotateCcw size={16} />新建草稿</button>
+              <button type="button" onClick={resetDraft} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white/10 px-4 text-sm font-black transition hover:bg-white/16"><RotateCcw size={16} />新建草稿</button>
               <Link href="/characters" className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-white px-4 text-sm font-black text-ink"><History size={16} />角色库<ArrowRight size={15} /></Link>
             </div>
           </div>
@@ -369,17 +403,18 @@ function StudioWorkspace() {
           </div>
 
           <div className="mt-6 space-y-5">
+            <GenerationModePicker value={mode} onChange={setMode} disabled={busy} />
             <div>
               <label htmlFor="inspiration" className="text-sm font-black">角色灵感 <span className="text-danger">*</span></label>
-              <textarea id="inspiration" value={input.inspiration} onChange={(event) => updateInput("inspiration", event.target.value)} rows={5} className="mt-2 w-full rounded-[22px] border border-line bg-bg px-4 py-3 text-base leading-7 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder="例如：雨夜里会替人修补梦境的纸符师" />
+              <textarea id="inspiration" maxLength={1200} disabled={busy} value={input.inspiration} onChange={(event) => updateInput("inspiration", event.target.value)} rows={5} className="mt-2 w-full rounded-[22px] border border-line bg-bg px-4 py-3 text-base leading-7 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder="例如：雨夜里会替人修补梦境的纸符师" />
               <p className="mt-2 text-xs font-semibold leading-5 text-muted">写清角色做什么、身处哪里，以及最特别的矛盾。</p>
             </div>
 
-            <fieldset><legend className="text-sm font-black">视觉风格</legend><div className="mt-2 flex flex-wrap gap-2">{characterStyles.map((style) => <button key={style} type="button" onClick={() => updateInput("style", style)} className={`min-h-10 rounded-pill px-3 text-xs font-black transition ${input.style === style ? "bg-ink text-white" : "bg-bg text-muted hover:bg-primary/15 hover:text-ink"}`}>{style}</button>)}</div></fieldset>
-            <fieldset><legend className="text-sm font-black">叙事位置</legend><div className="mt-2 flex flex-wrap gap-2">{characterTypes.map((type) => <button key={type} type="button" onClick={() => updateInput("type", type)} className={`min-h-10 rounded-pill px-3 text-xs font-black transition ${input.type === type ? "bg-pink text-ink" : "bg-bg text-muted hover:bg-pink/20 hover:text-ink"}`}>{type}</button>)}</div></fieldset>
-            <div><label htmlFor="world" className="text-sm font-black">世界观坐标</label><input id="world" value={input.world} onChange={(event) => updateInput("world", event.target.value)} className="mt-2 min-h-12 w-full rounded-pill border border-line bg-bg px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder="旧城区、废土巡演、梦境铺子…" /></div>
-            <div><label htmlFor="extra" className="text-sm font-black">必须保留的设定</label><textarea id="extra" value={input.extra} onChange={(event) => updateInput("extra", event.target.value)} rows={3} className="mt-2 w-full rounded-[22px] border border-line bg-bg px-4 py-3 text-sm leading-6 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder="关系、禁忌、性格反差或关键道具" /></div>
-            <Button type="button" onClick={handleGenerate} disabled={status === "loading"} className="w-full">{status === "loading" ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}{status === "loading" ? "正在编织角色冲突…" : character ? "重新生成人设" : "生成 OC 人设"}</Button>
+            <fieldset disabled={busy}><legend className="text-sm font-black">视觉风格</legend><div className="mt-2 flex flex-wrap gap-2">{characterStyles.map((style) => <button key={style} type="button" onClick={() => updateInput("style", style)} className={`min-h-10 rounded-pill px-3 text-xs font-black transition ${input.style === style ? "bg-ink text-white" : "bg-bg text-muted hover:bg-primary/15 hover:text-ink"}`}>{style}</button>)}</div></fieldset>
+            <fieldset disabled={busy}><legend className="text-sm font-black">叙事位置</legend><div className="mt-2 flex flex-wrap gap-2">{characterTypes.map((type) => <button key={type} type="button" onClick={() => updateInput("type", type)} className={`min-h-10 rounded-pill px-3 text-xs font-black transition ${input.type === type ? "bg-pink text-ink" : "bg-bg text-muted hover:bg-pink/20 hover:text-ink"}`}>{type}</button>)}</div></fieldset>
+            <div><label htmlFor="world" className="text-sm font-black">世界观坐标</label><input id="world" maxLength={800} disabled={busy} value={input.world} onChange={(event) => updateInput("world", event.target.value)} className="mt-2 min-h-12 w-full rounded-pill border border-line bg-bg px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder="旧城区、废土巡演、梦境铺子…" /></div>
+            <div><label htmlFor="extra" className="text-sm font-black">必须保留的设定</label><textarea id="extra" maxLength={800} disabled={busy} value={input.extra} onChange={(event) => updateInput("extra", event.target.value)} rows={3} className="mt-2 w-full rounded-[22px] border border-line bg-bg px-4 py-3 text-sm leading-6 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" placeholder="关系、禁忌、性格反差或关键道具" /></div>
+            <Button type="button" onClick={handleGenerate} disabled={busy} className="w-full">{status === "loading" ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}{status === "loading" ? "正在编织角色冲突…" : character ? "重新生成人设" : "生成 OC 人设"}</Button>
           </div>
         </section>
 
@@ -400,14 +435,17 @@ function StudioWorkspace() {
 
           {status === "result" && character ? (
             <>
+              <p className="text-sm font-bold text-muted">{resultMode === "ai" ? "AI 生成结果" : "模板演示结果"}</p>
               <CharacterResult character={character} onCopy={copyCharacter} onSave={handleSave} />
               <section className="rounded-[28px] border border-line bg-white p-5 shadow-soft">
                 <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase text-primary">Branch the idea</p><h2 className="mt-1 font-display text-2xl font-black">沿三个方向继续创作</h2><p className="mt-2 text-sm font-semibold leading-6 text-muted">每条分支独立生成并写入创作历史，不会覆盖角色设定。</p></div><button type="button" onClick={downloadCharacter} className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-bg px-4 text-sm font-black transition hover:bg-primary/15"><Download size={16} />导出 TXT</button></div>
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  {continuationOptions.map((option) => { const Icon = option.icon; const selected = continuationKind === option.id; return <button key={option.id} type="button" onClick={() => void handleContinuation(option.id)} className={`rounded-[22px] border p-4 text-left transition ${selected ? "border-ink bg-ink text-white" : "border-line bg-bg hover:border-primary hover:bg-primary/10"}`}><Icon size={20} /><span className="mt-4 block font-display text-lg font-black">{option.label}</span><span className={`mt-1 block text-xs font-semibold leading-5 ${selected ? "text-white/62" : "text-muted"}`}>{option.description}</span></button>; })}
+                  {continuationOptions.map((option) => { const Icon = option.icon; const selected = continuationKind === option.id; return <button key={option.id} type="button" disabled={busy} onClick={() => void handleContinuation(option.id)} className={`rounded-[22px] border p-4 text-left transition ${selected ? "border-ink bg-ink text-white" : "border-line bg-bg hover:border-primary hover:bg-primary/10"}`}><Icon size={20} /><span className="mt-4 block font-display text-lg font-black">{option.label}</span><span className={`mt-1 block text-xs font-semibold leading-5 ${selected ? "text-white/62" : "text-muted"}`}>{option.description}</span></button>; })}
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2"><Button type="button" variant="secondary" onClick={prepareCommissionDraft}>带着设定发布约稿<ArrowRight size={16} /></Button><Button type="button" onClick={handleSave} disabled={saving || Boolean(savedCharacterId)}>{saving ? <Loader2 size={17} className="animate-spin" /> : savedCharacterId ? <Check size={17} /> : <Cloud size={17} />}{savedCharacterId ? "已保存到角色库" : saving ? "正在保存…" : "保存为角色资产"}</Button></div>
               </section>
+              {continuationBusy ? <p role="status" className="text-sm font-bold text-muted">正在扩写，请稍候…</p> : null}
+              {continuationError ? <p role="alert" className="text-sm text-danger">{continuationError}</p> : null}
               {continuation ? <ContinuationCard item={continuation} onCopy={copyContinuation} /> : null}
             </>
           ) : null}
@@ -424,9 +462,9 @@ function StudioWorkspace() {
               const label = row.generation_type === "character" ? "角色设定" : row.generation_type === "story" ? "剧情片段" : row.generation_type === "dialogue" ? "对话口吻" : "头像提示";
               return (
                 <article key={row.id} className="rounded-[20px] border border-line bg-bg p-4">
-                  <div className="flex items-center justify-between gap-2"><span className="rounded-pill bg-white px-2.5 py-1 text-[11px] font-black text-primary">{label}</span><time className="text-[10px] font-bold text-muted">{new Date(row.created_at).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" })}</time></div>
+                  <div className="flex items-center justify-between gap-2"><span className="rounded-pill bg-white px-2.5 py-1 text-[11px] font-black text-primary">{row.prompt?.mode === "ai" ? "AI · " : "模板 · "}{label}</span><time className="text-[10px] font-bold text-muted">{new Date(row.created_at).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" })}</time></div>
                   <h3 className="mt-3 line-clamp-2 text-sm font-black leading-5">{restored?.name ?? item?.title ?? "已完成的创作记录"}</h3>
-                  {restored ? <button type="button" onClick={() => reopenGeneration(row)} className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-pill bg-white text-xs font-black transition hover:bg-ink hover:text-white"><History size={14} />恢复创作</button> : null}
+                  {restored ? <button type="button" disabled={busy} onClick={() => reopenGeneration(row)} className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-pill bg-white text-xs font-black transition hover:bg-ink hover:text-white"><History size={14} />恢复创作</button> : null}
                 </article>
               );
             })}

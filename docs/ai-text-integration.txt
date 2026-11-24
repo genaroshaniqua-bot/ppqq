@@ -1,0 +1,54 @@
+AI 文字创作接入（2026-11-24）
+
+范围
+- /studio：角色设定、剧情扩写、对话风格。
+- /characters/[id]：基于本人角色扩写剧情和对话。
+- /chat：基于本人角色和场景生成对话片段。
+- 模板演示保留，明确标注来源；头像、周边和摊宣仍是模板，不生成图片。
+
+服务
+AI SDK 7.0.179 + Vercel AI Gateway，Vercel 部署使用项目 OIDC。
+固定模型 nvidia/nemotron-3.5-lightning-free，仅允许 NVIDIA 提供服务。
+2026-11-24 实时目录中该提供商的输入、输出和推理价格均为零。
+每次生成前重新核对该模型的提供商价格；涨价、缺失、查询失败均停止。
+不配置模型回退、自动重试、工具调用或付费 Custom Reporting 标签。
+免费模型可能保留输入与输出用于改进，界面在选择 AI 时明确提示。
+
+启用条件
+当前默认关闭，尚未完成真实 AI 调用验收，不能当作已上线 AI 服务。
+必须先在团队 AI Gateway 核实免费使用资格、余额和 Auto-reload 关闭；
+同时确认未启用额外计费附加项或将此模型重写为其他模型的团队路由。
+需要绑卡/验证时由账户所有者处理；不要购买额度或启用自动充值。
+然后仅在目标部署环境设置：
+  AI_FREE_ONLY_VERIFIED=true
+  AI_TEXT_ENABLED=true
+并重新部署。不要把 API 密钥放进 NEXT_PUBLIC_* 或 Git。
+两个开关任一关闭即停止新生成；重新部署使开关生效。
+
+权限与限制
+服务端验证用户身份、active 状态及四项当前协议确认记录。
+有 characterId 时核对 owner_id，历史归属来自已验证会话。
+同源 JSON 请求；流式读取请求体最多 40000 字节；字段各自限长。
+单次最多 2400 输出 token、模型调用超时 45 秒、不自动重试。
+单实例限制同时一次并设置15秒间隔；这是尽力限流，不是跨实例全局配额。
+平台免费模型配额与额度是最终限制，限额/402错误直接停止。
+上线多人公开试用前仍建议增设持久化按用户限流，当前未新建数据库表。
+生成历史写入现有 ai_generations，失败时保留结果并提示复制/保存。
+前端不会把失败的 AI 请求静默替换成模板。
+
+验证
+node scripts/ai-regression.mjs：48项，使用模型/数据库桩，不花费额度、不写账户数据。
+node scripts/middleware-regression.mjs：15项。
+TypeScript、ESLint、Next生产构建通过。
+本地 Chrome：7项桌面/375px手机检查通过，无页面运行时错误；包括生成、扩写、
+额度耗尽提示、无自动重试、场景变更后保存原始上下文和无横向溢出。
+浏览器检查使用本地接口及数据库响应样本，不代替真实服务商和线上数据库链路验收；
+没有代替用户签署任何协议。
+
+后续真实验收
+用户自行完成协议确认后，在已核实的免费环境生成一个角色，扩写剧情与对话，
+检查云端历史、保存角色和页面刷新后的结果。在 Gateway 日志核对模型、提供商、
+请求状态及零费用；不要为测试故意耗尽额度。
+参考：https://vercel.com/docs/ai-gateway/pricing
+https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc
+https://ai-gateway.vercel.sh/v1/models/nvidia/nemotron-3.5-lightning-free/endpoints
