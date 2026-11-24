@@ -7,9 +7,9 @@ export default function MarketPage() {
   return <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <TaskPathGuide
       title="先选交付方式，再挑喜欢的商品"
-      description="商店购买不会进入约稿沟通。数字商品付款后等待文件交付；实体周边在结算时填写地址并等待物流。当前均为模拟支付。"
+      description="商店购买不会进入约稿沟通。数字商品付款后等待文件交付；实体周边在结算时填写地址并等待物流。当前暂未开放收款，不会生成已支付订单。"
       paths={[
-        { eyebrow: "无需收货地址", title: "购买数字商品", description: "适合素材包、设定文件与数字周边。加入购物车后可直接进入模拟支付。", steps: ["查看详情", "加入购物车", "等待文件"], href: "#shop-products", action: "浏览数字商品", icon: Download, emphasis: "dark" },
+        { eyebrow: "无需收货地址", title: "购买数字商品", description: "适合素材包、设定文件与数字周边。可先浏览并加入购物车，收款暂未开放。", steps: ["查看详情", "加入购物车", "等待文件"], href: "#shop-products", action: "浏览数字商品", icon: Download, emphasis: "dark" },
         { eyebrow: "需要配送", title: "购买实体周边", description: "适合徽章、立牌和印刷品。结算时保存收货地址，卖家发货后可查看物流。", steps: ["确认库存", "填写地址", "等待收货"], href: "#shop-products", action: "浏览实体周边", icon: Truck },
         { eyebrow: "还没想好", title: "浏览全部商品", description: "先查看封面、详情、价格和交付标签，再决定加入购物车；不会自动扣款。", steps: ["浏览分类", "查看详情", "确认结算"], href: "#shop-products", action: "进入商品区", icon: PackageSearch }
       ]}

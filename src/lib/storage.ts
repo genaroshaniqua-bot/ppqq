@@ -1,40 +1,45 @@
-import { mockCharacters } from "@/data/mock-characters";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Character } from "@/types/character";
 
-const STORAGE_KEY = "ai-oc-studio.characters";
+type CharacterRow = { id: string; name: string; summary: string; profile: Character; created_at: string };
 
-export function readCharacters(): Character[] {
-  if (typeof window === "undefined") {
-    return mockCharacters;
-  }
-
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return mockCharacters;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Character[];
-    return Array.isArray(parsed) ? parsed : mockCharacters;
-  } catch {
-    return mockCharacters;
-  }
+async function account() {
+  const client = createSupabaseBrowserClient();
+  const { data: { user }, error } = await client.auth.getUser();
+  if (error || !user) throw new Error("请先登录后管理角色资产。");
+  return { client, userId: user.id };
 }
-
-export function writeCharacters(characters: Character[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(characters));
+function toCharacter(row: CharacterRow): Character {
+  return { ...row.profile, id: row.id, name: row.name, summary: row.summary, createdAt: row.created_at };
+}
+export async function readCharacters(): Promise<Character[]> {
+  const { client, userId } = await account();
+  const { data, error } = await client.from("characters")
+    .select("id,name,summary,profile,created_at").eq("owner_id", userId).order("created_at", { ascending: false });
+  if (error) throw new Error("角色库加载失败，请重试。");
+  return ((data ?? []) as CharacterRow[]).map(toCharacter);
+}
+export async function saveCharacter(character: Character): Promise<Character> {
+  const { client, userId } = await account();
+  const { data, error } = await client.from("characters").insert({
+    owner_id: userId, name: character.name, summary: character.summary, profile: character, visibility: "private"
+  }).select("id,name,summary,profile,created_at").single();
+  if (error) throw new Error("云端保存失败，请重试；当前创作结果仍保留在页面中。");
   window.dispatchEvent(new Event("characters-updated"));
+  return toCharacter(data as CharacterRow);
 }
-
-export function saveCharacter(character: Character) {
-  const existing = readCharacters();
-  const next = [character, ...existing.filter((item) => item.id !== character.id)];
-  writeCharacters(next);
-  return next;
+export async function updateCharacter(character: Character): Promise<Character> {
+  const { client, userId } = await account();
+  const { data, error } = await client.from("characters").update({
+    name: character.name, summary: character.summary, profile: character
+  }).eq("id", character.id).eq("owner_id", userId).select("id,name,summary,profile,created_at").single();
+  if (error) throw new Error("更新失败，角色可能已被删除。请刷新后重试。");
+  window.dispatchEvent(new Event("characters-updated"));
+  return toCharacter(data as CharacterRow);
 }
-
-export function deleteCharacter(id: string) {
-  const next = readCharacters().filter((item) => item.id !== id);
-  writeCharacters(next);
-  return next;
+export async function deleteCharacter(id: string): Promise<void> {
+  const { client, userId } = await account();
+  const { data, error } = await client.from("characters").delete().eq("id", id).eq("owner_id", userId).select("id");
+  if (error || !data?.length) throw new Error("删除失败，请刷新角色库后重试。");
+  window.dispatchEvent(new Event("characters-updated"));
 }

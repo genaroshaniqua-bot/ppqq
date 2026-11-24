@@ -1,5 +1,7 @@
 "use client";
 
+import { accountStorage } from "@/lib/account-storage";
+
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, BriefcaseBusiness, CalendarDays, CheckCircle2, CircleDollarSign, Clock3, CreditCard, FileCheck2, Info, LoaderCircle, Plus, Search, Send, SlidersHorizontal, Sparkles, UserRound, XCircle } from "lucide-react";
@@ -53,6 +55,7 @@ type CommissionOrder = {
 };
 
 type OrderDelivery = {
+  file_paths: string[];
   id: string;
   order_id: string;
   kind: "draft" | "final";
@@ -122,7 +125,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
       supabase.from("artist_services").select("id, artist_id, title, description, service_type, base_price, revision_limit, delivery_days, is_active").eq("is_active", true).order("created_at", { ascending: false }),
       supabase.from("commission_requests").select("id, client_id, service_id, title, brief, budget_min, budget_max, deadline, usage_scope, status, quoted_amount, artist_response_note, created_at").order("created_at", { ascending: false }),
       supabase.rpc("get_my_commission_orders"),
-      supabase.from("order_deliveries").select("id, order_id, kind, note, decision, decision_note, created_at").order("created_at", { ascending: false }),
+      supabase.from("order_deliveries").select("id, order_id, kind, note, file_paths, decision, decision_note, created_at").order("created_at", { ascending: false }),
       supabase.from("order_disputes").select("id, order_id, reason, status, resolution, created_at").order("created_at", { ascending: false }),
       supabase.from("notifications").select("id, related_order_id, read_at").is("read_at", null).order("created_at", { ascending: false })
     ]);
@@ -157,7 +160,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
   }, [loadData]);
 
   useEffect(() => {
-    setGuideDismissed(window.localStorage.getItem(`${GUIDE_STORAGE_PREFIX}-${view}`) === "dismissed");
+    setGuideDismissed(accountStorage.getItem(`${GUIDE_STORAGE_PREFIX}-${view}`) === "dismissed");
   }, [view]);
 
   useEffect(() => {
@@ -167,18 +170,18 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
   }, [feedback]);
 
   function dismissGuide() {
-    window.localStorage.setItem(`${GUIDE_STORAGE_PREFIX}-${view}`, "dismissed");
+    accountStorage.setItem(`${GUIDE_STORAGE_PREFIX}-${view}`, "dismissed");
     setGuideDismissed(true);
   }
 
   useEffect(() => {
     if (!showClient) return;
-    const raw = window.localStorage.getItem(COMMISSION_DRAFT_STORAGE_KEY);
+    const raw = accountStorage.getItem(COMMISSION_DRAFT_STORAGE_KEY);
     if (!raw) return;
     try {
       setDraft(JSON.parse(raw) as CommissionDraft);
     } catch {
-      window.localStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+      accountStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
     }
   }, [showClient]);
 
@@ -212,7 +215,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
   }
 
   function clearDraft() {
-    window.localStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+    accountStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
     setDraft(null);
   }
 
@@ -241,7 +244,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
       return;
     }
     setSelectedService(null);
-    window.localStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+    accountStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
     setDraft(null);
     showSuccess("委托已发送。下一步等待画师确认范围并发送报价。");
     await loadData();
@@ -270,34 +273,42 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
     const { error } = await supabase.rpc("confirm_commission_quote", { target_request_id: requestId });
     setSaving(false);
     if (error) { showError(error.message); return; }
-    showSuccess("报价已确认。正式订单已生成，下一步支付模拟定金。");
+    showSuccess("报价已确认，已生成待支付订单。收款暂未开放，请等待平台通知后再继续。");
     await loadData();
   }
 
-  async function payDeposit(orderId: string) {
-    setSaving(true);
-    clearFeedback();
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.rpc("simulate_commission_deposit", { target_order_id: orderId });
-    setSaving(false);
-    if (error) { showError(error.message); return; }
-    showSuccess("模拟定金支付成功。画师现在可以开始创作并提交草稿。");
-    await loadData();
-  }
+  async function payDeposit() { setFeedback({ tone: "error", text: "收款服务暂未开放，订单状态保持不变。" }); }
 
-  async function submitDelivery(orderId: string, kind: "draft" | "final", note: string) {
-    setSaving(true);
-    clearFeedback();
+  async function submitDelivery(orderId: string, kind: "draft" | "final", note: string, files: File[]): Promise<boolean> {
+    if (saving) return false;
+    if (files.length > 5 || files.some(file => file.size > 50 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp", "application/pdf", "application/zip", "application/x-zip-compressed"].includes(file.type))) {
+      showError("最多上传 5 个 JPG、PNG、WebP、PDF 或 ZIP 文件，每个不超过 50 MB。"); return false;
+    }
+    if (kind === "final" && files.length === 0) { showError("成稿需要至少一个交付文件。"); return false; }
+    setSaving(true); clearFeedback();
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.rpc("submit_commission_delivery", {
-      target_order_id: orderId,
-      delivery_kind: kind,
-      delivery_note: note
-    });
-    setSaving(false);
-    if (error) { showError(error.message); return; }
-    showSuccess(kind === "draft" ? "草稿已提交。下一步等待委托人确认或提出修改。" : "成稿已提交。下一步等待委托人验收。");
-    await loadData();
+    const paths: string[] = [];
+    let committed = false;
+    try {
+      for (const file of files) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100) || "attachment";
+        const path = `${userId}/${orderId}/${crypto.randomUUID()}-${safeName}`;
+        const { error } = await supabase.storage.from("commission-files").upload(path, file, { contentType: file.type === "application/x-zip-compressed" ? "application/zip" : file.type, upsert: false });
+        if (error) throw new Error(`文件上传失败：${error.message}`);
+        paths.push(path);
+      }
+      const { error } = await supabase.rpc("submit_commission_delivery", { target_order_id: orderId, delivery_kind: kind, delivery_note: note, delivery_files: paths });
+      if (error) throw new Error(error.message);
+      committed = true;
+      showSuccess(kind === "draft" ? "草稿已提交，等待委托人审核。" : "成稿与附件已提交，等待委托人验收。");
+      await loadData();
+      return true;
+    } catch (error) {
+      // The server protects committed attachments even if the response was lost.
+      if (!committed && paths.length) await supabase.storage.from("commission-files").remove(paths);
+      showError(error instanceof Error ? error.message : "交付失败，请重试。");
+      return false;
+    } finally { setSaving(false); }
   }
 
   async function reviewDelivery(deliveryId: string, decision: "approved" | "revision_requested", note: string) {
@@ -315,16 +326,7 @@ export function CommissionBackendPanel({ view = "all" }: { view?: CommissionPane
     await loadData();
   }
 
-  async function payBalance(orderId: string) {
-    setSaving(true);
-    clearFeedback();
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.rpc("simulate_commission_balance", { target_order_id: orderId });
-    setSaving(false);
-    if (error) { showError(error.message); return; }
-    showSuccess("模拟尾款支付成功。订单已完成，现在可以评价本次合作。");
-    await loadData();
-  }
+  async function payBalance() { setFeedback({ tone: "error", text: "收款服务暂未开放，订单状态保持不变。" }); }
 
   async function openDispute(orderId: string, reason: string) {
     setSaving(true);
@@ -605,8 +607,10 @@ function getOrderNextAction(mode: CommissionPanelView, status: CommissionOrder["
   return guidance[status];
 }
 
-function OrderWorkflowCard({ mode, order, requestDeadline, userId, unreadCount, onMessagesRead, deliveries, dispute, isAdmin, saving, onPayDeposit, onSubmit, onReview, onPayBalance, onOpenDispute, onResolveDispute }: { mode: CommissionPanelView; order: CommissionOrder; requestDeadline: string | null; userId: string; unreadCount: number; onMessagesRead: () => Promise<void>; deliveries: OrderDelivery[]; dispute: OrderDispute | null; isAdmin: boolean; saving: boolean; onPayDeposit: (id: string) => Promise<void>; onSubmit: (id: string, kind: "draft" | "final", note: string) => Promise<void>; onReview: (id: string, decision: "approved" | "revision_requested", note: string) => Promise<void>; onPayBalance: (id: string) => Promise<void>; onOpenDispute: (id: string, reason: string) => Promise<void>; onResolveDispute: (id: string, action: "continue" | "refund" | "close", note: string) => Promise<void> }) {
+function OrderWorkflowCard({ mode, order, requestDeadline, userId, unreadCount, onMessagesRead, deliveries, dispute, isAdmin, saving, onPayDeposit, onSubmit, onReview, onPayBalance, onOpenDispute, onResolveDispute }: { mode: CommissionPanelView; order: CommissionOrder; requestDeadline: string | null; userId: string; unreadCount: number; onMessagesRead: () => Promise<void>; deliveries: OrderDelivery[]; dispute: OrderDispute | null; isAdmin: boolean; saving: boolean; onPayDeposit: (id: string) => Promise<void>; onSubmit: (id: string, kind: "draft" | "final", note: string, files: File[]) => Promise<boolean>; onReview: (id: string, decision: "approved" | "revision_requested", note: string) => Promise<void>; onPayBalance: (id: string) => Promise<void>; onOpenDispute: (id: string, reason: string) => Promise<void>; onResolveDispute: (id: string, action: "continue" | "refund" | "close", note: string) => Promise<void> }) {
   const [deliveryNote, setDeliveryNote] = useState("");
+  const [deliveryFiles, setDeliveryFiles] = useState<File[]>([]);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [reviewNote, setReviewNote] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
   const [resolutionNote, setResolutionNote] = useState("");
@@ -640,25 +644,42 @@ function OrderWorkflowCard({ mode, order, requestDeadline, userId, unreadCount, 
         <p className="mt-1 text-xs font-semibold leading-5 text-muted">{nextAction.detail}</p>
       </div>
 
-      {(mode === "client" || mode === "all") && order.status === "pending_deposit" && order.deposit_status === "unpaid" ? <Button type="button" disabled={saving} className="mt-4 w-full sm:w-auto" onClick={() => { if (window.confirm(`确认模拟支付定金 ¥${order.deposit_amount}？支付后画师即可开始创作。`)) void onPayDeposit(order.id); }}><CreditCard size={16} />{saving ? "正在支付" : `支付模拟定金 ¥${order.deposit_amount}`}</Button> : null}
+      {(mode === "client" || mode === "all") && order.status === "pending_deposit" && order.deposit_status === "unpaid" ? <Button type="button" disabled className="mt-4 w-full sm:w-auto" onClick={() => { if (window.confirm(`确认模拟支付定金 ¥${order.deposit_amount}？支付后画师即可开始创作。`)) void onPayDeposit(order.id); }}><CreditCard size={16} />{saving ? "正在支付" : "定金支付暂未开放"}</Button> : null}
 
-      {(mode === "artist" || mode === "all") && (order.status === "in_progress" || order.status === "revision_requested") ? <div className="mt-4 grid gap-2"><textarea aria-label={`交付说明-${order.id}`} value={deliveryNote} onChange={(event) => setDeliveryNote(event.target.value)} rows={3} placeholder={nextKind === "draft" ? "说明草稿构图、配色和需要确认的细节" : "说明成稿文件、尺寸和交付内容"} className="rounded-[14px] border border-line bg-white p-3 text-sm font-semibold outline-none focus:border-primary" /><p className={cn("text-[11px] font-semibold", deliveryNoteRemaining > 0 ? "text-muted" : "text-primary")}>{deliveryNoteRemaining > 0 ? `还需填写 ${deliveryNoteRemaining} 个字，说明本次交付内容。` : "交付说明已完整，可以提交。"}</p><Button type="button" disabled={saving || deliveryNoteRemaining > 0} className="w-full sm:w-auto" onClick={() => onSubmit(order.id, nextKind, deliveryNote)}><Send size={16} />{saving ? "正在提交" : nextKind === "draft" ? "提交草稿" : "提交成稿"}</Button></div> : null}
+      {(mode === "artist" || mode === "all") && (order.status === "in_progress" || order.status === "revision_requested") ? <div className="mt-4 grid gap-2"><textarea aria-label={`交付说明-${order.id}`} value={deliveryNote} onChange={(event) => setDeliveryNote(event.target.value)} rows={3} placeholder={nextKind === "draft" ? "说明草稿构图、配色和需要确认的细节" : "说明成稿文件、尺寸和交付内容"} className="rounded-[14px] border border-line bg-white p-3 text-sm font-semibold outline-none focus:border-primary" /><p className={cn("text-[11px] font-semibold", deliveryNoteRemaining > 0 ? "text-muted" : "text-primary")}>{deliveryNoteRemaining > 0 ? `还需填写 ${deliveryNoteRemaining} 个字，说明本次交付内容。` : "交付说明已完整，可以提交。"}</p><label className="text-xs font-bold">交付附件（最多 5 个，每个 50 MB；成稿必填）<input key={fileInputKey} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf,application/zip,.zip" disabled={saving} onChange={event => setDeliveryFiles(Array.from(event.target.files ?? []))} className="mt-2 block w-full" /></label><Button type="button" disabled={saving || deliveryNoteRemaining > 0 || (nextKind === "final" && deliveryFiles.length === 0)} className="w-full sm:w-auto" onClick={async () => { if (await onSubmit(order.id, nextKind, deliveryNote, deliveryFiles)) { setDeliveryNote(""); setDeliveryFiles([]); setFileInputKey(key => key + 1); } }}><Send size={16} />{saving ? "正在提交" : nextKind === "draft" ? "提交草稿" : "提交成稿"}</Button></div> : null}
 
-      {(mode === "client" || mode === "all") && (order.status === "draft_review" || order.status === "final_review") && waitingDelivery ? <div className="mt-4 grid gap-2"><p className="rounded-[14px] bg-white p-3 text-sm font-semibold leading-6 text-muted"><span className="font-black text-ink">画师本次提交：</span>{waitingDelivery.note}</p><input aria-label={`审核意见-${order.id}`} value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="通过可不填写；要求修改时请写明具体内容" className="h-11 rounded-[12px] border border-line bg-white px-3 text-sm font-bold outline-none focus:border-primary" />{reviewNote.length > 0 && reviewNoteRemaining > 0 ? <p className="text-[11px] font-semibold text-danger">要求修改还需填写 {reviewNoteRemaining} 个字，避免画师无法判断修改范围。</p> : null}<div className="flex flex-wrap gap-2"><Button type="button" disabled={saving} className="flex-1 sm:flex-none" onClick={() => onReview(waitingDelivery.id, "approved", reviewNote || "审核通过")}><CheckCircle2 size={15} />{saving ? "正在处理" : order.status === "draft_review" ? "确认草稿" : "验收成稿"}</Button><Button type="button" variant="secondary" disabled={saving || reviewNoteRemaining > 0} className="flex-1 sm:flex-none" onClick={() => onReview(waitingDelivery.id, "revision_requested", reviewNote)}><XCircle size={15} />要求修改</Button></div></div> : null}
+      {(mode === "client" || mode === "all") && (order.status === "draft_review" || order.status === "final_review") && waitingDelivery ? <div className="mt-4 grid gap-2"><p className="rounded-[14px] bg-white p-3 text-sm font-semibold leading-6 text-muted"><span className="font-black text-ink">画师本次提交：</span>{waitingDelivery.note}</p><DeliveryFiles paths={waitingDelivery.file_paths ?? []} /><input aria-label={`审核意见-${order.id}`} value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="通过可不填写；要求修改时请写明具体内容" className="h-11 rounded-[12px] border border-line bg-white px-3 text-sm font-bold outline-none focus:border-primary" />{reviewNote.length > 0 && reviewNoteRemaining > 0 ? <p className="text-[11px] font-semibold text-danger">要求修改还需填写 {reviewNoteRemaining} 个字，避免画师无法判断修改范围。</p> : null}<div className="flex flex-wrap gap-2"><Button type="button" disabled={saving} className="flex-1 sm:flex-none" onClick={() => onReview(waitingDelivery.id, "approved", reviewNote || "审核通过")}><CheckCircle2 size={15} />{saving ? "正在处理" : order.status === "draft_review" ? "确认草稿" : "验收成稿"}</Button><Button type="button" variant="secondary" disabled={saving || reviewNoteRemaining > 0} className="flex-1 sm:flex-none" onClick={() => onReview(waitingDelivery.id, "revision_requested", reviewNote)}><XCircle size={15} />要求修改</Button></div></div> : null}
 
-      {(mode === "client" || mode === "all") && order.status === "pending_balance" ? <Button type="button" disabled={saving} className="mt-4 w-full sm:w-auto" onClick={() => { if (window.confirm(`确认模拟支付尾款 ¥${order.balance_amount}？支付后订单将完成。`)) void onPayBalance(order.id); }}><CreditCard size={16} />{saving ? "正在支付" : `支付模拟尾款 ¥${order.balance_amount}`}</Button> : null}
+      {(mode === "client" || mode === "all") && order.status === "pending_balance" ? <Button type="button" disabled className="mt-4 w-full sm:w-auto" onClick={() => { if (window.confirm(`确认模拟支付尾款 ¥${order.balance_amount}？支付后订单将完成。`)) void onPayBalance(order.id); }}><CreditCard size={16} />{saving ? "正在支付" : "尾款支付暂未开放"}</Button> : null}
       {order.status === "completed" ? <><p className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary"><CheckCircle2 size={16} />订单已完成，交付与付款记录已保存</p>{(mode === "client" || mode === "all") ? <ArtistReviewForm orderId={order.id} /> : null}</> : null}
 
-      {dispute ? <div className="mt-4 rounded-[16px] border border-danger/25 bg-danger/5 p-4"><p className="text-xs font-black uppercase text-danger">争议处理中</p><p className="mt-2 text-sm font-semibold leading-6 text-muted">{dispute.reason}</p>{mode === "admin" && isAdmin ? <div className="mt-3 grid gap-2"><input aria-label={`仲裁说明-${order.id}`} value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} placeholder="填写管理员仲裁依据" className="h-11 rounded-[12px] border border-line bg-white px-3 text-sm font-bold outline-none focus:border-primary" /><p className={cn("text-[11px] font-semibold", resolutionNoteRemaining > 0 ? "text-danger" : "text-muted")}>{resolutionNoteRemaining > 0 ? `还需填写 ${resolutionNoteRemaining} 个字才能作出仲裁。` : "仲裁依据已完整，请选择处理结果。"}</p><div className="flex flex-wrap gap-2"><Button type="button" disabled={saving || resolutionNoteRemaining > 0} onClick={() => onResolveDispute(dispute.id, "continue", resolutionNote)}>继续履约</Button><Button type="button" variant="danger" disabled={saving || resolutionNoteRemaining > 0} onClick={() => onResolveDispute(dispute.id, "refund", resolutionNote)}>模拟退款</Button><Button type="button" variant="secondary" disabled={saving || resolutionNoteRemaining > 0} onClick={() => onResolveDispute(dispute.id, "close", resolutionNote)}>关闭订单</Button></div></div> : <p className="mt-3 text-xs font-black text-danger">管理员处理中，期间无法继续交付或付款。</p>}</div> : null}
+      {dispute ? <div className="mt-4 rounded-[16px] border border-danger/25 bg-danger/5 p-4"><p className="text-xs font-black uppercase text-danger">争议处理中</p><p className="mt-2 text-sm font-semibold leading-6 text-muted">{dispute.reason}</p>{mode === "admin" && isAdmin ? <div className="mt-3 grid gap-2"><input aria-label={`仲裁说明-${order.id}`} value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} placeholder="填写管理员仲裁依据" className="h-11 rounded-[12px] border border-line bg-white px-3 text-sm font-bold outline-none focus:border-primary" /><p className={cn("text-[11px] font-semibold", resolutionNoteRemaining > 0 ? "text-danger" : "text-muted")}>{resolutionNoteRemaining > 0 ? `还需填写 ${resolutionNoteRemaining} 个字才能作出仲裁。` : "仲裁依据已完整，请选择处理结果。"}</p><div className="flex flex-wrap gap-2"><Button type="button" disabled={saving || resolutionNoteRemaining > 0} onClick={() => onResolveDispute(dispute.id, "continue", resolutionNote)}>继续履约</Button><Button type="button" variant="danger" disabled>退款暂未开放</Button><Button type="button" variant="secondary" disabled={saving || resolutionNoteRemaining > 0} onClick={() => onResolveDispute(dispute.id, "close", resolutionNote)}>关闭订单</Button></div></div> : <p className="mt-3 text-xs font-black text-danger">管理员处理中，期间无法继续交付或付款。</p>}</div> : null}
 
       {order.status === "cancelled" ? <p className="mt-4 inline-flex items-center gap-2 text-sm font-black text-danger"><XCircle size={16} />订单已关闭 · 定金 {order.deposit_status === "refunded" ? "已退款" : order.deposit_status} · 尾款 {order.balance_status === "refunded" ? "已退款" : order.balance_status}</p> : null}
       <details className="mt-4 rounded-[16px] border border-line bg-white p-3">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-black text-muted"><span>查看进度、付款与沟通</span><span className="rounded-pill bg-bg px-3 py-1">{unreadCount > 0 ? `${unreadCount} 条未读` : "展开详情"}</span></summary>
         <div className="mt-4 grid gap-2 sm:grid-cols-3"><span className="rounded-[12px] bg-bg px-3 py-2 text-xs font-bold text-muted">总价 <strong className="text-ink">¥{order.quoted_amount}</strong></span><span className="rounded-[12px] bg-bg px-3 py-2 text-xs font-bold text-muted">定金 <strong className="text-ink">¥{order.deposit_amount} · {order.deposit_status === "paid" ? "已支付" : order.deposit_status === "refunded" ? "已退款" : "未支付"}</strong></span><span className="rounded-[12px] bg-bg px-3 py-2 text-xs font-bold text-muted">尾款 <strong className="text-ink">¥{order.balance_amount} · {order.balance_status === "paid" ? "已支付" : order.balance_status === "refunded" ? "已退款" : "未支付"}</strong></span></div>
+        <div className="mt-3 space-y-3">{deliveries.map(delivery => <div key={delivery.id} className="rounded-[14px] bg-bg p-3"><p className="text-xs font-bold">{delivery.kind === "draft" ? "草稿" : "成稿"} · {delivery.note}</p><DeliveryFiles paths={delivery.file_paths ?? []} /></div>)}</div>
         <OrderStatusTimeline status={order.status} />
         <OrderMessagePanel orderId={order.id} userId={userId} unreadCount={unreadCount} onRead={onMessagesRead} />
         {(mode === "client" || mode === "artist" || mode === "all") && !dispute && order.status !== "cancelled" && order.status !== "disputed" ? <details className="mt-3 rounded-[14px] border border-line bg-bg p-3"><summary className="cursor-pointer text-xs font-black text-muted">遇到履约问题？发起争议</summary><p className="mt-2 text-xs font-semibold leading-5 text-muted">争议会立即冻结交付与付款，仅在双方无法通过消息解决问题时使用。</p><textarea aria-label={`争议原因-${order.id}`} value={disputeReason} onChange={(event) => setDisputeReason(event.target.value)} rows={3} placeholder="说明交付、授权、时间或付款方面的问题" className="mt-3 w-full rounded-[12px] border border-line bg-white p-3 text-sm font-semibold outline-none focus:border-danger" /><p className="mt-1 text-[11px] font-semibold text-muted">{disputeReasonRemaining > 0 ? `还需填写 ${disputeReasonRemaining} 个字才能提交。` : "原因已填写，提交后订单会冻结。"}</p><Button type="button" variant="danger" disabled={saving || disputeReasonRemaining > 0} className="mt-2 w-full sm:w-auto" onClick={() => onOpenDispute(order.id, disputeReason)}><XCircle size={15} />提交争议并冻结订单</Button></details> : null}
       </details>
     </article>
   );
+}
+
+function DeliveryFiles({ paths }: { paths: string[] }) {
+  const [error, setError] = useState("");
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  async function prepare(path: string) {
+    setBusy(true); setError("");
+    try {
+      const { data, error: signingError } = await createSupabaseBrowserClient().storage.from("commission-files").createSignedUrl(path, 60, { download: true });
+      if (signingError) throw new Error("附件暂时无法下载，请重试。");
+      setLinks(current => ({ ...current, [path]: data.signedUrl }));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "下载失败，请重试。"); }
+    finally { setBusy(false); }
+  }
+  return <div className="mt-2 space-y-2">{paths.map((path, index) => <div key={path} className="flex flex-wrap items-center gap-3 text-xs font-bold"><button type="button" disabled={busy} onClick={() => void prepare(path)} className="min-h-10 underline">{links[path] ? "刷新下载链接" : `获取附件 ${index + 1}`}</button>{links[path] ? <a href={links[path]} target="_blank" rel="noreferrer" className="text-primary underline">下载附件 {index + 1}（链接 60 秒内有效）</a> : null}</div>)}{error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}</div>;
 }

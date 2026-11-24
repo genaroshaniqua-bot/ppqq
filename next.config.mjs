@@ -2,6 +2,7 @@
 const nextConfig = {
   outputFileTracingRoot: process.cwd(),
   reactStrictMode: true,
+  images: { remotePatterns: [{ protocol: "https", hostname: "eqhjefbpudoqmrxkmqpc.supabase.co", pathname: "/storage/v1/object/**" }] },
   async headers() {
     return [{
       source: "/(.*)",

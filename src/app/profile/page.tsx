@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { ArrowRight, Bell, Crown, FolderHeart, Heart, Palette, ReceiptText, Settings2, Sparkles } from "lucide-react";
 import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { ProfileBackendStats } from "@/components/profile/ProfileBackendStats";
 import { CreditBalance } from "@/components/profile/CreditBalance";
-import { readCharacters } from "@/lib/storage";
-import type { Character } from "@/types/character";
+import { useRoleWorkspace } from "@/components/auth/RoleWorkspaceProvider";
+import { useCharacters } from "@/lib/use-characters";
 
 const workspaces = [
   { href: "/studio", label: "继续创作", desc: "从最近的角色灵感继续生成。", icon: Sparkles, tone: "bg-lime" },
@@ -17,9 +16,9 @@ const workspaces = [
 ];
 
 export default function ProfilePage() {
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const { characters, loading, error, refresh } = useCharacters();
+  const { displayName, accountRole } = useRoleWorkspace();
 
-  useEffect(() => setCharacters(readCharacters()), []);
 
   return (
     <div className="profile-page mx-auto min-h-[calc(100dvh-9rem)] max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -43,8 +42,8 @@ export default function ProfilePage() {
 
           <aside className="rounded-[26px] border border-white/10 bg-white/[0.07] p-5">
             <div className="flex items-center justify-between">
-              <span className="grid size-12 place-items-center rounded-full bg-gradient-to-br from-purple to-pink text-lg font-black">艾</span>
-              <span className="inline-flex items-center gap-2 rounded-pill bg-white/10 px-3 py-2 text-xs font-black"><Crown size={15} />基础会员</span>
+              <span className="grid size-12 place-items-center rounded-full bg-gradient-to-br from-purple to-pink text-lg font-black">{(displayName || "我").slice(0, 1)}</span>
+              <span className="inline-flex items-center gap-2 rounded-pill bg-white/10 px-3 py-2 text-xs font-black"><Crown size={15} />{accountRole === "admin" ? "管理员" : accountRole === "artist" ? "画师账号" : "用户账号"}</span>
             </div>
             <div className="mt-7 grid grid-cols-2 gap-3">
               <div><p className="text-xs font-bold text-white/50">点数余额</p><p className="mt-1 font-display text-3xl font-black"><CreditBalance /></p></div>
@@ -60,7 +59,7 @@ export default function ProfilePage() {
           <div><p className="text-xs font-black uppercase text-primary">Live overview</p><h2 id="asset-overview-heading" className="mt-1 font-display text-2xl font-black">资产与待办</h2></div>
           <Link href="/profile/notifications" className="inline-flex min-h-10 items-center gap-2 rounded-pill bg-white px-4 text-xs font-black text-muted shadow-soft"><Bell size={15} />查看通知</Link>
         </div>
-        <ProfileBackendStats characterCount={characters.length} />
+        {loading ? <p role="status">正在读取角色资产…</p> : error ? <p role="alert" className="text-danger">{error} <button onClick={() => void refresh()} className="underline">重试</button></p> : <ProfileBackendStats characterCount={characters.length} />}
       </section>
 
       <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="常用工作区">
@@ -81,7 +80,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase text-purple">Recent assets</p><h2 className="mt-1 font-display text-2xl font-black">最近角色</h2></div><Link href="/characters" className="text-xs font-black text-muted hover:text-primary">查看全部</Link></div>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {characters.slice(0, 3).map((character) => <Link key={character.id} href={`/characters/${character.id}`} className="rounded-[20px] bg-bg p-4 text-sm font-black transition hover:bg-primary/12">{character.name}<Palette size={16} className="mt-5 text-primary" /></Link>)}
-            {characters.length === 0 ? <p className="sm:col-span-3 rounded-[20px] bg-bg p-5 text-sm font-semibold text-muted">还没有角色资产。完成一次创作后，角色会出现在这里。</p> : null}
+            {!loading && !error && characters.length === 0 ? <p className="sm:col-span-3 rounded-[20px] bg-bg p-5 text-sm font-semibold text-muted">还没有角色资产。完成一次创作后，角色会出现在这里。</p> : null}
           </div>
         </article>
 

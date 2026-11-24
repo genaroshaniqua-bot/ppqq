@@ -13,7 +13,8 @@ import {
   characterBasicSuggestions,
   type CharacterBasicField
 } from "@/data/character-edit-suggestions";
-import { deleteCharacter, readCharacters, writeCharacters } from "@/lib/storage";
+import { deleteCharacter, updateCharacter } from "@/lib/storage";
+import { useCharacters } from "@/lib/use-characters";
 import type { Character } from "@/types/character";
 
 type FilterOption = {
@@ -58,7 +59,9 @@ const characterFilterGroups: Array<{ id: string; label: string; options: FilterO
 
 export default function CharactersPage() {
   const router = useRouter();
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const { characters, loading, error, refresh } = useCharacters();
+  const [saving, setSaving] = useState(false);
+  const [mutationError, setMutationError] = useState("");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterOption | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
@@ -66,12 +69,6 @@ export default function CharactersPage() {
   const [pendingDelete, setPendingDelete] = useState<Character | null>(null);
   const [toast, setToast] = useState("");
 
-  useEffect(() => {
-    setCharacters(readCharacters());
-    const sync = () => setCharacters(readCharacters());
-    window.addEventListener("characters-updated", sync);
-    return () => window.removeEventListener("characters-updated", sync);
-  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -89,19 +86,24 @@ export default function CharactersPage() {
     });
   }, [activeFilter, characters, query]);
 
-  function saveEdit(character: Character) {
-    const next = characters.map((item) => (item.id === character.id ? character : item));
-    setCharacters(next);
-    writeCharacters(next);
-    setEditing(null);
-    setToast("角色信息已更新");
+  async function saveEdit(character: Character) {
+    if (saving) return;
+    setSaving(true); setMutationError("");
+    try {
+      await updateCharacter(character);
+      setEditing(null); setToast("角色信息已同步到云端"); await refresh();
+    } catch (cause) { setMutationError(cause instanceof Error ? cause.message : "保存失败，请重试。"); }
+    finally { setSaving(false); }
   }
 
-  function confirmDelete() {
-    if (!pendingDelete) return;
-    setCharacters(deleteCharacter(pendingDelete.id));
-    setToast(`已删除 ${pendingDelete.name}`);
-    setPendingDelete(null);
+  async function confirmDelete() {
+    if (!pendingDelete || saving) return;
+    setSaving(true); setMutationError("");
+    try {
+      await deleteCharacter(pendingDelete.id);
+      setToast(`已删除 ${pendingDelete.name}`); setPendingDelete(null); await refresh();
+    } catch (cause) { setMutationError(cause instanceof Error ? cause.message : "删除失败，请重试。"); }
+    finally { setSaving(false); }
   }
 
   function returnToPreviousPage() {
@@ -128,7 +130,7 @@ export default function CharactersPage() {
         <div>
           <p className="text-xs font-black uppercase text-primary">Character Library</p>
           <h1 className="mt-2 font-display text-4xl font-black md:text-6xl">角色资产库</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">管理长期角色资产。当前使用 mock 数据和 localStorage 保存，适合前端演示。</p>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">管理云端角色资产。保存、编辑与删除会同步到当前账号，可在不同设备继续创作。</p>
           <Link href="/studio" className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-ink px-5 text-sm font-black text-white shadow-soft">
             <Plus size={17} aria-hidden="true" />
             新建角色
@@ -206,7 +208,7 @@ export default function CharactersPage() {
         </div>
       </section>
 
-      {filtered.length > 0 ? (
+      {loading ? <p role="status" className="py-8 text-center text-muted">正在加载云端角色库…</p> : error ? <div role="alert" className="rounded-card bg-white p-6"><p>{error}</p><Button type="button" onClick={() => void refresh()} className="mt-3">重新加载</Button></div> : filtered.length > 0 ? (
         <section className="space-y-6">
           {filtered.map((character) => (
             <CharacterCard key={character.id} character={character} onEdit={setEditing} onDelete={setPendingDelete} />
@@ -222,7 +224,7 @@ export default function CharactersPage() {
         </section>
       )}
 
-      {editing ? <EditDialog character={editing} onClose={() => setEditing(null)} onSave={saveEdit} /> : null}
+      {editing ? <EditDialog character={editing} saving={saving} error={mutationError} onClose={() => !saving && setEditing(null)} onSave={saveEdit} /> : null}
 
       {pendingDelete ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink/50 px-4">
@@ -230,12 +232,13 @@ export default function CharactersPage() {
             <h2 id="delete-title" className="font-display text-2xl font-black">
               删除 {pendingDelete.name}？
             </h2>
-            <p className="mt-3 text-sm leading-6 text-muted">删除后会从本地角色库移除。示例角色仍可通过刷新默认数据恢复。</p>
+            <p className="mt-3 text-sm leading-6 text-muted">删除后会从当前账号的云端角色库移除，其他设备也将同步。此操作无法撤销。</p>
+            {mutationError ? <p role="alert" className="mt-3 text-danger">{mutationError}</p> : null}
             <div className="mt-5 flex gap-3">
-              <Button type="button" variant="secondary" className="flex-1" onClick={() => setPendingDelete(null)}>
+              <Button type="button" variant="secondary" disabled={saving} className="flex-1" onClick={() => setPendingDelete(null)}>
                 取消
               </Button>
-              <Button type="button" variant="danger" className="flex-1" onClick={confirmDelete}>
+              <Button type="button" variant="danger" disabled={saving} className="flex-1" onClick={confirmDelete}>
                 确认删除
               </Button>
             </div>
@@ -250,10 +253,14 @@ export default function CharactersPage() {
 
 function EditDialog({
   character,
+  saving,
+  error,
   onClose,
   onSave
 }: {
   character: Character;
+  saving: boolean;
+  error: string;
   onClose: () => void;
   onSave: (character: Character) => void;
 }) {
@@ -373,11 +380,12 @@ function EditDialog({
           </div>
         </section>
 
+        {error ? <p role="alert" className="mt-3 text-sm text-danger">{error}</p> : null}
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
+          <Button type="button" variant="secondary" className="flex-1" disabled={saving} onClick={onClose}>
             取消
           </Button>
-          <Button type="button" className="flex-1" onClick={() => onSave(draft)}>
+          <Button type="button" className="flex-1" disabled={saving} onClick={() => onSave(draft)}>
             保存修改
           </Button>
         </div>

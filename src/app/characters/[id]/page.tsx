@@ -10,18 +10,14 @@ import { ContinuationCard } from "@/components/generation/ContinuationCard";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { generateAvatarPrompt, generateDialogue, generateMerch, generateStory } from "@/lib/mock-generate";
-import { readCharacters } from "@/lib/storage";
-import type { Character, CharacterContinuation } from "@/types/character";
+import { useCharacters } from "@/lib/use-characters";
+import type { CharacterContinuation } from "@/types/character";
 
 export default function CharacterDetailPage() {
   const params = useParams<{ id: string }>();
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const { characters, loading, error, refresh } = useCharacters();
   const [generated, setGenerated] = useState<CharacterContinuation | null>(null);
   const [toast, setToast] = useState("");
-
-  useEffect(() => {
-    setCharacters(readCharacters());
-  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -43,11 +39,13 @@ export default function CharacterDetailPage() {
     setToast("生成内容已复制");
   }
 
+  if (loading || error) return <div className="mx-auto max-w-3xl p-8" role={error ? "alert" : "status"}><p>{error || "正在加载云端角色…"}</p>{error ? <Button className="mt-4" onClick={() => void refresh()}>重新加载</Button> : null}</div>;
+
   if (!character) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 lg:px-8">
         <h1 className="font-display text-3xl font-black">没有找到这个角色</h1>
-        <p className="mt-3 text-sm leading-6 text-muted">角色可能尚未保存到本地角色库，或者本地数据已被清空。</p>
+        <p className="mt-3 text-sm leading-6 text-muted">角色可能已被删除，或不属于当前账号。</p>
         <Link href="/characters" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-pill bg-ink px-5 text-sm font-black text-white">
           返回角色库
         </Link>
@@ -108,7 +106,7 @@ export default function CharacterDetailPage() {
               <div>
                 <p className="text-xs font-black uppercase text-primary">Continue Creation</p>
                 <h2 className="mt-1 font-display text-2xl font-black">基于角色继续生成</h2>
-                <p className="mt-2 text-sm leading-6 text-muted">所有结果都是前端 mock，可复制后用于设定集、约稿说明或摊宣准备。</p>
+                <p className="mt-2 text-sm leading-6 text-muted">当前为模板演示，尚未接入 AI。结果可复制，用作设定集、约稿说明或摊宣准备的参考。</p>
               </div>
               <Sparkles className="hidden text-primary sm:block" size={28} aria-hidden="true" />
             </div>

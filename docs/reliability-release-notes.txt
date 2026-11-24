@@ -1,0 +1,29 @@
+Existing-system reliability fixes — 2026-11-23
+
+Scope
+No AI provider or payment channel is configured. Template generation remains available with explicit demo labels; paid checkout, credits, paid portfolio unlocks, deposits, balances and refunds fail closed without modifying payment state.
+
+Database
+0028: active-account checks, null-safe authorization, restricted SECURITY DEFINER grants, internal notification protection, restrictive RLS.
+0029: disable unconfigured payment and refund writes.
+0030: account-owned durable service favorites.
+0031: private commission attachments, immutable submitted files, verified order ownership, final files required, revision resubmission and serialized review.
+0032: apply active-account filtering to the complete public commission market result.
+These five migrations were applied to eqhjefbpudoqmrxkmqpc through the dashboard in two transactions and verified by read-only catalog queries. The project's pre-existing migration registry was empty; no historical execution records were fabricated. Do not blindly replay these migrations on that database. A clean isolated PostgreSQL instance can replay all migrations in order.
+
+Application
+Cloud character CRUD is the canonical source for character library, details, profile and chat. Browser drafts and interaction histories are scoped to the signed-in account; account changes clear rendered private state. Legacy unscoped browser records are retained but not silently assigned to another user.
+Home discovery reads active services, approved artists, real reviews and persistent favorites. Fallback covers are labeled. Failed reads/saves expose errors and retry actions.
+Payment buttons are disabled, and demo generation is clearly labeled. Existing records remain visible. Commission attachments upload to private storage; order parties obtain expiring download links.
+Middleware handles inactive accounts, API authentication and administrator health probes. Missing configuration and authorization lookup failures fail closed. The operations dashboard no longer fabricates a healthy state after a failed probe. Missing required legal documents block the corresponding feature.
+
+Validation
+53 database security/state-transition checks in isolated PostgreSQL.
+11 account-storage assertions.
+15 middleware assertions, including suspended accounts and unavailable services.
+48 HTTP checks against the local production build, with the three acceptance accounts.
+TypeScript, ESLint and Next.js production build passed.
+The native browser became unavailable because the Mac locked. Full browser interaction and mobile layout acceptance remain pending; HTTP checks are not represented as visual acceptance.
+
+Rollout boundary
+Database changes are live. Frontend changes require a GitHub/Vercel publication connection and a post-deployment check. This release does not establish real payment processing, real AI, email delivery, identity-provider verification, backup recovery or production load capacity.

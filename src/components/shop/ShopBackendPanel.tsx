@@ -93,24 +93,8 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
     setCart((refreshedCart ?? []) as CartItem[]);
   }
 
-  async function checkout() {
-    setSaving(true); setMessage("");
-    const needsAddress = cart.some((item) => products.find((product) => product.id === item.product_id)?.kind === "physical");
-    if (needsAddress && !selectedAddressId) { setSaving(false); setMessage("实体商品结算前请先保存并选择收货地址"); return; }
-    const { data: orderId, error } = await createSupabaseBrowserClient().rpc("checkout_shop_cart_with_address", { target_address_id: needsAddress ? selectedAddressId : null });
-    setSaving(false);
-    if (error) { setMessage(error.message); return; }
-    setMessage(`模拟支付成功，商品订单 ${String(orderId).slice(0, 8)} 已生成`);
-    setCheckoutOpen(false);
-    window.dispatchEvent(new Event("notification-read"));
-    await load();
-  }
-
-  function beginCheckout() {
-    if (cart.length === 0) return;
-    setCheckoutOpen(true);
-    window.requestAnimationFrame(() => document.getElementById("shop-checkout")?.scrollIntoView({ behavior: "smooth", block: "center" }));
-  }
+  async function checkout() { setMessage("收款服务暂未开放，不会生成已支付订单。"); }
+  function beginCheckout() { setMessage("收款服务暂未开放，购物车会为你保留。"); }
 
   async function createAddress(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -168,11 +152,12 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
   }
 
   async function advanceOrder(orderId: string, action: "shipped" | "delivered" | "received" | "refund") {
+    if (action === "refund") { setMessage("退款服务暂未开放，订单保持不变。"); return; }
     setSaving(true); setMessage("");
     const { error } = await createSupabaseBrowserClient().rpc("advance_shop_order", { target_order_id: orderId, action });
     setSaving(false);
     if (error) { setMessage(error.message); return; }
-    setMessage(action === "refund" ? "管理员已完成模拟退款并恢复库存" : action === "received" ? "商品订单已确认完成" : "商品履约状态已更新");
+    setMessage(action === "received" ? "商品订单已确认完成" : "商品履约状态已更新");
     await load();
   }
 
@@ -244,7 +229,7 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
       <aside className="h-fit space-y-4 lg:sticky lg:top-24"><section className="rounded-card border border-line bg-white p-5 shadow-soft"><div className="flex items-center justify-between"><h2 className="font-display text-2xl font-black">购物车</h2><span className="rounded-pill bg-lime px-3 py-1 text-xs font-black">{cart.reduce((sum,item) => sum + item.quantity,0)} 件</span></div><div className="mt-4 space-y-3">{cartRows.map((item) => <div key={item.product_id} className="rounded-[18px] bg-bg p-3"><div className="flex justify-between gap-3"><p className="text-sm font-black">{item.product?.title}</p><button aria-label={`移除-${item.product?.title}`} onClick={() => setQuantity(item.product_id,0)}><Trash2 size={15} className="text-danger" /></button></div><p className="mt-2 text-xs font-bold text-muted">¥{item.product?.price} × {item.quantity}</p></div>)}{cartRows.length === 0 ? <p className="rounded-[18px] bg-bg px-4 py-7 text-center text-sm font-semibold text-muted">先浏览商品，再进入结算</p> : null}</div><div className="mt-5 flex items-center justify-between border-t border-line pt-4"><span className="text-sm font-black">合计</span><span className="font-display text-3xl font-black">¥{total}</span></div><Button type="button" disabled={saving || cartRows.length === 0} onClick={beginCheckout} className="mt-4 w-full"><CreditCard size={16} />进入结算</Button><p className="mt-3 text-xs font-semibold leading-5 text-muted">结算时才确认交付方式；数字商品无需填写收货地址。</p></section></aside>
     </div> : null}
     {selectedProduct ? <ProductQuickView product={selectedProduct} quantity={selectedQuantity} saving={saving} onClose={() => setSelectedProduct(null)} onSetQuantity={setQuantity} /> : null}
-    {showBuyer && checkoutOpen && cartRows.length > 0 ? <section id="shop-checkout" className="mt-7 scroll-mt-28 rounded-[30px] border border-lime bg-ink p-5 text-white shadow-soft sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-lime">Checkout</p><h2 className="mt-1 font-display text-3xl font-black">确认交付与模拟支付</h2><p className="mt-2 text-sm font-semibold text-white/62">本次共 {cart.reduce((sum, item) => sum + item.quantity, 0)} 件商品，合计 ¥{total}。</p></div><button type="button" onClick={() => setCheckoutOpen(false)} className="rounded-pill border border-white/16 px-4 py-2 text-xs font-black text-white">返回继续选购</button></div>{cartNeedsAddress ? <div className="mt-5 text-ink"><AddressPanel addresses={addresses} selectedId={selectedAddressId} saving={saving} onSelect={setSelectedAddressId} onCreate={createAddress} /></div> : <div className="mt-5 flex items-center gap-3 rounded-[18px] bg-white/8 p-4"><span className="grid size-10 place-items-center rounded-full bg-lime text-ink"><Download size={18} aria-hidden="true" /></span><div><p className="text-sm font-black">全部为数字商品</p><p className="mt-1 text-xs font-semibold text-white/58">付款后由画师通过订单安全交付文件，无需收货地址。</p></div></div>}<div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/12 pt-5"><div><p className="text-xs font-bold text-white/54">应付金额</p><p className="font-display text-4xl font-black text-lime">¥{total}</p></div><Button type="button" disabled={saving || (cartNeedsAddress && !selectedAddressId)} onClick={checkout}><CreditCard size={16} />确认模拟支付</Button></div></section> : null}
+    {showBuyer && checkoutOpen && cartRows.length > 0 ? <section id="shop-checkout" className="mt-7 scroll-mt-28 rounded-[30px] border border-lime bg-ink p-5 text-white shadow-soft sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-lime">Checkout</p><h2 className="mt-1 font-display text-3xl font-black">收款暂未开放</h2><p className="mt-2 text-sm font-semibold text-white/62">本次共 {cart.reduce((sum, item) => sum + item.quantity, 0)} 件商品，合计 ¥{total}。</p></div><button type="button" onClick={() => setCheckoutOpen(false)} className="rounded-pill border border-white/16 px-4 py-2 text-xs font-black text-white">返回继续选购</button></div>{cartNeedsAddress ? <div className="mt-5 text-ink"><AddressPanel addresses={addresses} selectedId={selectedAddressId} saving={saving} onSelect={setSelectedAddressId} onCreate={createAddress} /></div> : <div className="mt-5 flex items-center gap-3 rounded-[18px] bg-white/8 p-4"><span className="grid size-10 place-items-center rounded-full bg-lime text-ink"><Download size={18} aria-hidden="true" /></span><div><p className="text-sm font-black">全部为数字商品</p><p className="mt-1 text-xs font-semibold text-white/58">付款后由画师通过订单安全交付文件，无需收货地址。</p></div></div>}<div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/12 pt-5"><div><p className="text-xs font-bold text-white/54">应付金额</p><p className="font-display text-4xl font-black text-lime">¥{total}</p></div><Button type="button" disabled onClick={checkout}><CreditCard size={16} />暂未开放支付</Button></div></section> : null}
     <section className="mt-8 rounded-card border border-line bg-white p-5 shadow-soft">
       <div className="flex items-center gap-3"><CheckCircle2 className="text-primary" /><h2 className="font-display text-2xl font-black">商品订单明细与交付</h2></div>
       <div className="mt-4 grid gap-3 lg:grid-cols-2">{visibleOrders.map((order) => {
@@ -257,7 +242,7 @@ export function ShopBackendPanel({ view = "all" }: { view?: ShopPanelView }) {
           {order.shipping_address ? <div className="mt-3 rounded-[14px] bg-blue/5 p-3 text-xs font-semibold leading-5 text-muted"><p className="font-black text-blue">收货地址快照</p><p className="mt-1">{order.shipping_address.recipient_name} · {order.shipping_address.phone}<br />{order.shipping_address.region} {order.shipping_address.detail}</p></div> : null}
           {order.delivery_method ? <div className="mt-3 rounded-[14px] border border-primary/20 bg-white p-3 text-xs font-semibold leading-5 text-muted"><p className="font-black text-ink">{order.delivery_method === "shipping" ? "物流信息" : "数字交付资料"}</p>{order.digital_download_url ? <a href={order.digital_download_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 font-black text-purple">打开下载地址 <ExternalLink size={12} /></a> : null}{order.delivery_file_path ? <><Button type="button" variant="secondary" className="mt-2" onClick={() => createDownloadLink(order.id, order.delivery_file_path!)}>生成 10 分钟下载链接</Button>{downloadLinks[order.id] ? <a href={downloadLinks[order.id]} target="_blank" rel="noreferrer" className="mt-2 block font-black text-purple">下载私有文件 <ExternalLink className="inline" size={12} /></a> : null}</> : null}{order.tracking_number ? <p className="mt-2">{order.tracking_company} · {order.tracking_number}</p> : null}<p className="mt-1">{order.delivery_note}</p></div> : null}
           {(showSeller || view === "admin") && ownProducts && order.fulfillment_status === "processing" ? <FulfillmentForm orderId={order.id} digital={digitalOnly} saving={saving} onSubmit={submitFulfillment} onFileSubmit={uploadDeliveryFile} /> : null}
-          <div className="mt-3 flex flex-wrap gap-2">{(view === "buyer" || view === "buyer-orders" || view === "all") && order.buyer_id === userId && order.fulfillment_status === "delivered" ? <Button type="button" disabled={saving} onClick={() => advanceOrder(order.id,"received")}><CheckCircle2 size={14} />确认收货</Button> : null}{view === "admin" && isAdmin && order.payment_status === "paid" ? <Button type="button" variant="danger" disabled={saving} onClick={() => advanceOrder(order.id,"refund")}><RotateCcw size={14} />模拟退款</Button> : null}</div>
+          <div className="mt-3 flex flex-wrap gap-2">{(view === "buyer" || view === "buyer-orders" || view === "all") && order.buyer_id === userId && order.fulfillment_status === "delivered" ? <Button type="button" disabled={saving} onClick={() => advanceOrder(order.id,"received")}><CheckCircle2 size={14} />确认收货</Button> : null}{view === "admin" && isAdmin && order.payment_status === "paid" ? <Button type="button" variant="danger" disabled><RotateCcw size={14} />退款暂未开放</Button> : null}</div>
           <time className="mt-3 block text-xs font-semibold text-muted">{new Date(order.created_at).toLocaleString("zh-CN")}</time>
         </article>;
       })}{visibleOrders.length === 0 ? <p className="text-sm font-semibold text-muted">当前没有符合此工作区的商品订单。</p> : null}</div>
@@ -311,7 +296,7 @@ function ProductQuickView({ product, quantity, saving, onClose, onSetQuantity }:
 
         <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]"><Button type="button" disabled={saving || (!available && quantity === 0)} onClick={() => onSetQuantity(product.id, Math.max(1, quantity))} className="min-h-14 w-full bg-lime text-base text-ink hover:bg-primary"><ShoppingBag size={18} />{quantity > 0 ? "已加入购物车" : "加入购物车"}</Button><Link href={`/market/${product.id}`} className="inline-flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-5 text-sm font-black">完整详情<ExternalLink size={15} /></Link></div>
 
-        <div className="mt-7 rounded-[20px] border border-line bg-white p-4"><div className="flex items-center gap-3"><DeliveryIcon size={19} className="text-primary" /><div><p className="text-sm font-black">{product.kind === "digital" ? "付款后安全交付" : "确认地址后安排配送"}</p><p className="mt-1 text-xs font-semibold leading-5 text-muted">平台使用模拟支付，并在订单中记录交付与售后状态。</p></div></div></div>
+        <div className="mt-7 rounded-[20px] border border-line bg-white p-4"><div className="flex items-center gap-3"><DeliveryIcon size={19} className="text-primary" /><div><p className="text-sm font-black">{product.kind === "digital" ? "付款后安全交付" : "确认地址后安排配送"}</p><p className="mt-1 text-xs font-semibold leading-5 text-muted">收款服务暂未开放。现有订单可查看交付与售后记录。</p></div></div></div>
       </div>
     </section>
   </div>;

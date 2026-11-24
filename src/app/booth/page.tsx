@@ -62,7 +62,7 @@ export default function BoothPage() {
       <section className="mb-7 grid gap-6 rounded-[36px] border border-line bg-white p-6 shadow-soft md:p-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
         <div><p className="text-xs font-black uppercase text-primary">Booth Toolkit</p>
           <h1 className="mt-2 font-display text-4xl font-black md:text-6xl">摊宣 / 漫展工具</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">输入摊位和商品信息，生成适配平台的摊宣文案、商品菜单和价格牌说明。</p>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">输入摊位和商品信息，生成摊宣文案、商品菜单和价格牌说明。当前为免费模板演示，尚未接入 AI 服务。</p>
         </div>
         <FeatureArtPanel src="/images/case-sheet.png" alt="角色徽章、亚克力立牌和宣传卡组成的漫展摊位物料" eyebrow="摊宣物料预览" caption="把角色设定整理成菜单、价格牌与社交平台宣传素材" className="min-h-[220px]" />
       </section>

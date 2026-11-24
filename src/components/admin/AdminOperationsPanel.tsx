@@ -30,22 +30,27 @@ export function AdminOperationsPanel() {
     const supabase = createSupabaseBrowserClient();
     const [{ data: { user } }, healthResult, eventResult, ticketResult, runResult] = await Promise.all([
       supabase.auth.getUser(),
-      fetch("/api/health", { cache: "no-store" }).then(async (response) => ({ ...(await response.json()), httpOk: response.ok })).catch(() => null),
+      fetch("/api/health", { cache: "no-store", redirect: "error" }).then(async (response) => {
+        if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) return null;
+        return response.json();
+      }).catch(() => null),
       supabase.from("operations_events").select("id, severity, source, event_code, message, route, created_at").is("resolved_at", null).order("created_at", { ascending: false }).limit(100),
       supabase.from("support_tickets").select("id, user_id, category, priority, subject, description, status, created_at").neq("status", "closed").order("created_at", { ascending: false }).limit(100),
       supabase.from("recovery_runs").select("id, scenario, status, environment, rpo_minutes, rto_minutes, notes, created_at").order("created_at", { ascending: false }).limit(30)
     ]);
     setAdminId(user?.id ?? "");
-    const dataQueriesHealthy = !eventResult.error && !ticketResult.error && !runResult.error;
     setHealth(
       healthResult && typeof healthResult === "object" && "services" in healthResult
         ? healthResult as Health
         : {
-            status: dataQueriesHealthy ? "ok" : "degraded",
+            status: "unknown",
             checkedAt: new Date().toISOString(),
-            services: { application: "up", database: dataQueriesHealthy ? "up" : "down" }
+            services: { application: "unknown", database: "unknown" }
           }
     );
+    if (!healthResult) setNotice("健康检查暂时无法完成，请重试；当前不能确认服务正常。");
+    else if (eventResult.error || ticketResult.error || runResult.error) setNotice("部分运维数据读取失败，请重试。");
+    else setNotice("");
     setEvents((eventResult.data ?? []) as Event[]);
     setTickets((ticketResult.data ?? []) as Ticket[]);
     setRuns((runResult.data ?? []) as RecoveryRun[]);

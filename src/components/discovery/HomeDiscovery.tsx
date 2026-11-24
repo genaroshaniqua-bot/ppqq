@@ -2,29 +2,31 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, BadgeCheck, Bookmark, Clock3, Search, ShieldCheck, Sparkles, Star, UserRoundCheck, Wand2 } from "lucide-react";
+import { loadDiscovery, type DiscoveryService, type DiscoveryCreator } from "@/lib/discovery";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const heroCards = [
   {
     title: "真人画师优先",
     desc: "从 OC 头像、立绘到 Live2D 拆分，把需求交给可验证创作者。",
-    artist: "@星图工坊",
+    artist: "平台功能介绍",
     image: "/images/artwork/silver-twins.jpg",
     imagePosition: "center top"
   },
   {
     title: "反 AI 训练保护",
     desc: "约稿、作品展示和需求表单都强调原创授权与素材边界。",
-    artist: "@青灯素材铺",
+    artist: "平台规则介绍",
     image: "/images/artwork/green-wedding.jpg",
     imagePosition: "center top"
   },
   {
-    title: "担保交易与档期",
+    title: "委托流程与档期",
     desc: "报价、工期、修改次数和商用授权在下单前先讲清楚。",
-    artist: "@薄荷观测站",
+    artist: "平台流程介绍",
     image: "/images/artwork/starlight-mage.png",
     imagePosition: "center top"
   }
@@ -41,67 +43,45 @@ const categories = [
   { name: "商稿授权", service: "角色立绘", license: "商业使用", icon: "授权", tone: "from-[#66d7ff] via-[#b7ff48] to-[#ffdc63]" }
 ];
 
-const services = [
-  {
-    title: "清透系 OC 半身头像",
-    creator: "Mika 星图",
-    status: "OPEN",
-    price: "¥80 起",
-    rating: "5.0",
-    reviews: "145",
-    tags: ["可商用", "7 天"],
-    image: "/images/artwork/maid-heart.jpg",
-    imagePosition: "center 14%",
-    sale: true
-  },
-  {
-    title: "Live2D 立绘拆分与基础绑定",
-    creator: "薄荷观测站",
-    status: "WAITLIST",
-    price: "¥680 起",
-    rating: "4.9",
-    reviews: "68",
-    tags: ["源文件", "30 天"],
-    image: "/images/artwork/neon-street.jpg",
-    imagePosition: "center 12%"
-  },
-  {
-    title: "OC 表情包 + 徽章套组",
-    creator: "软糖信号社",
-    status: "OPEN",
-    price: "¥60 起",
-    rating: "4.8",
-    reviews: "97",
-    tags: ["套组", "可加急"],
-    image: "/images/artwork/blue-water.jpg",
-    imagePosition: "center 10%",
-    sale: true
-  },
-  {
-    title: "摊宣菜单与小红书文案",
-    creator: "浮岛排版所",
-    status: "OPEN",
-    price: "¥120 起",
-    rating: "4.9",
-    reviews: "86",
-    tags: ["漫展", "模板"],
-    image: "/images/artwork/pink-cafe.jpg",
-    imagePosition: "center 12%"
-  }
-];
-
-const creators = [
-  { name: "Hana 镜面社", handle: "@hana-mirror", role: "VTuber / Live2D", score: "5.0", onTime: "99%", badges: ["认证", "商用"], image: "/images/artwork/pink-fish.jpg" },
-  { name: "纸页工坊", handle: "@paper-room", role: "OC 人设卡 / 排版", score: "4.9", onTime: "96%", badges: ["担保", "原创"], image: "/images/artwork/tennis-star.jpg" },
-  { name: "夜航视觉组", handle: "@night-sail", role: "直播素材 / PV", score: "5.0", onTime: "100%", badges: ["团队", "开稿"], image: "/images/artwork/starlight-mage.png" }
-];
-
-const filters = ["全部", "开稿中", "可商用", "7 天内", "Live2D", "OC", "头像", "摊宣"];
+const filters = ["全部", "开稿中", "7 天内", "Live2D", "OC", "头像", "摊宣"];
 
 export function HomeDiscovery() {
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("全部");
   const [saved, setSaved] = useState<string[]>([]);
+  const [services, setServices] = useState<DiscoveryService[]>([]);
+  const [creators, setCreators] = useState<DiscoveryCreator[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [savingFavorite, setSavingFavorite] = useState(false);
+  const reload = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const result = await loadDiscovery(); setServices(result.services); setCreators(result.creators);
+      const client = createSupabaseBrowserClient();
+      const { data, error: favoriteError } = await client.from("service_favorites").select("service_id");
+      if (favoriteError) throw new Error("收藏暂时无法加载，请重试。");
+      setSaved((data ?? []).map(row=>row.service_id));
+    } catch(cause) { setError(cause instanceof Error ? cause.message : "加载失败，请重试。"); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void reload(); }, [reload]);
+  async function toggleFavorite(serviceId: string) {
+    if (savingFavorite) return;
+    setSavingFavorite(true); setError("");
+    try {
+      const client = createSupabaseBrowserClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) throw new Error("请先登录再收藏服务。");
+      const exists = saved.includes(serviceId);
+      const { error: saveError } = exists
+        ? await client.from("service_favorites").delete().eq("user_id",user.id).eq("service_id",serviceId)
+        : await client.from("service_favorites").upsert({user_id:user.id,service_id:serviceId},{onConflict:"user_id,service_id",ignoreDuplicates:true});
+      if (saveError) throw new Error("收藏更新失败，请重试。");
+      setSaved(current=>exists?current.filter(id=>id!==serviceId):[...current,serviceId]);
+    } catch(cause) { setError(cause instanceof Error ? cause.message : "收藏失败，请重试。"); }
+    finally { setSavingFavorite(false); }
+  }
 
   const filteredServices = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -111,10 +91,11 @@ export function HomeDiscovery() {
       const matchFilter =
         activeFilter === "全部" ||
         (activeFilter === "开稿中" && service.status === "OPEN") ||
+        (activeFilter === "7 天内" && service.days <= 7) ||
         text.includes(activeFilter.toLowerCase());
       return matchQuery && matchFilter;
     });
-  }, [activeFilter, query]);
+  }, [activeFilter, query, services]);
 
   return (
     <div className="marketplace-background overflow-hidden bg-bg text-ink">
@@ -248,12 +229,13 @@ export function HomeDiscovery() {
           </div>
         </div>
 
+        {loading ? <p role="status" className="mb-4 text-muted">正在加载服务目录…</p> : error ? <p role="alert" className="mb-4 text-danger">{error} <button onClick={() => void reload()} className="underline">重试</button></p> : filteredServices.length === 0 ? <p className="mb-4 text-muted">暂无匹配服务，请更换搜索或筛选条件。</p> : null}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {filteredServices.map((service) => {
-            const isSaved = saved.includes(service.title);
+            const isSaved = saved.includes(service.id);
             return (
               <article
-                key={service.title}
+                key={service.id}
                 className="group relative overflow-hidden rounded-[26px] bg-card text-white shadow-[0_16px_40px_rgba(35,50,95,0.14)]"
               >
                 <Image
@@ -267,10 +249,12 @@ export function HomeDiscovery() {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-[#171722]/10 to-[#171722]/78" />
                 <div className="relative aspect-[1.62] overflow-hidden">
                   <span className="absolute left-3 top-3 rounded-pill bg-lime px-3 py-1 text-xs font-black text-ink">{service.status}</span>
+                  {service.placeholder ? <span className="absolute bottom-3 left-3 rounded-pill bg-black/60 px-3 py-1 text-xs font-bold text-white">暂无作品封面</span> : null}
                   {service.sale ? <span className="absolute bottom-3 left-3 rounded-pill bg-purple px-3 py-1 text-xs font-black text-white">Sale</span> : null}
                   <button
                     type="button"
-                    onClick={() => setSaved((current) => (isSaved ? current.filter((item) => item !== service.title) : [...current, service.title]))}
+                    disabled={savingFavorite || loading}
+                    onClick={() => void toggleFavorite(service.id)}
                     className="absolute right-3 top-3 grid size-11 place-items-center rounded-[18px] bg-white/88 text-ink backdrop-blur transition hover:bg-white"
                     aria-label={isSaved ? "取消收藏" : "收藏服务"}
                   >
@@ -279,7 +263,7 @@ export function HomeDiscovery() {
                 </div>
                 <div className="relative bg-gradient-to-b from-[#171722]/34 via-[#171722]/60 to-[#171722]/80 p-4 backdrop-blur-[1px]">
                   <div className="relative">
-                    <h3 className="line-clamp-2 min-h-11 text-base font-black leading-tight">{service.title}</h3>
+                    <h3 className="line-clamp-2 min-h-11 text-base font-black leading-tight"><Link href={`/commissions/${service.id}`}>{service.title}</Link></h3>
                     <div className="mt-3 flex items-center gap-2 text-[13px] font-bold text-white/62">
                       <span className="grid size-6 place-items-center rounded-full bg-gradient-to-br from-pink to-blue text-[10px] text-white">画</span>
                       <span className="truncate">{service.creator}</span>
@@ -333,14 +317,14 @@ export function HomeDiscovery() {
 
         <div className="grid gap-4">
           {creators.map((creator) => (
-            <Link key={creator.handle} href="/commissions" className="flex flex-col gap-4 rounded-[28px] border border-white/10 bg-card p-5 transition hover:-translate-y-1 sm:flex-row sm:items-center">
+            <Link key={creator.handle} href={creator.href} className="flex flex-col gap-4 rounded-[28px] border border-white/10 bg-card p-5 transition hover:-translate-y-1 sm:flex-row sm:items-center">
               <div className="relative size-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-pink via-purple to-lime shadow-[0_18px_44px_rgba(0,0,0,0.26)]">
                 <Image src={creator.image} alt="" fill sizes="80px" className="object-cover" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-lg font-black">{creator.name}</h3>
-                  <BadgeCheck size={18} className="text-blue" aria-hidden="true" />
+
                 </div>
                 <p className="mt-1 text-sm font-bold text-muted">
                   {creator.handle} · {creator.role}
@@ -355,7 +339,7 @@ export function HomeDiscovery() {
               </div>
               <div className="flex gap-3 text-sm font-black sm:block sm:text-right">
                 <p>★ {creator.score}</p>
-                <p className="text-muted">{creator.onTime} 按时</p>
+                <p className="text-muted">{creator.onTime}</p>
               </div>
             </Link>
           ))}

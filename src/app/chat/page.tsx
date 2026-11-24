@@ -1,15 +1,15 @@
 "use client";
 
+import { accountStorage } from "@/lib/account-storage";
+
 import { useEffect, useMemo, useState } from "react";
 import { Copy, MessageCircle, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { FeatureArtPanel } from "@/components/layout/FeatureArtPanel";
-import { mockCharacters } from "@/data/mock-characters";
 import { interactionPrompts } from "@/data/mock-platform";
-import { readCharacters } from "@/lib/storage";
+import { useCharacters } from "@/lib/use-characters";
 import { cn } from "@/lib/utils";
-import type { Character } from "@/types/character";
 
 const SAVED_INTERACTIONS_KEY = "oc-forge-saved-interactions";
 
@@ -22,7 +22,7 @@ type SavedInteraction = {
 };
 
 export default function ChatPage() {
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const { characters, loading, error, refresh } = useCharacters();
   const [characterId, setCharacterId] = useState("");
   const [promptId, setPromptId] = useState(interactionPrompts[0].id);
   const [customScene, setCustomScene] = useState("");
@@ -31,16 +31,16 @@ export default function ChatPage() {
   const [toast, setToast] = useState("");
 
   useEffect(() => {
-    const stored = readCharacters();
-    const next = stored.length > 0 ? stored : mockCharacters;
-    setCharacters(next);
-    setCharacterId(next[0]?.id ?? "");
     try {
-      setSavedInteractions(JSON.parse(window.localStorage.getItem(SAVED_INTERACTIONS_KEY) ?? "[]") as SavedInteraction[]);
+      setSavedInteractions(JSON.parse(accountStorage.getItem(SAVED_INTERACTIONS_KEY) ?? "[]") as SavedInteraction[]);
     } catch {
-      window.localStorage.removeItem(SAVED_INTERACTIONS_KEY);
+      accountStorage.removeItem(SAVED_INTERACTIONS_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    setCharacterId((id) => characters.some((item) => item.id === id) ? id : characters[0]?.id ?? "");
+  }, [characters]);
 
   const selectedCharacter = useMemo(() => characters.find((character) => character.id === characterId), [characters, characterId]);
   const selectedPrompt = interactionPrompts.find((prompt) => prompt.id === promptId) ?? interactionPrompts[0];
@@ -72,15 +72,15 @@ export default function ChatPage() {
       lines: result,
       createdAt: new Date().toISOString()
     }, ...savedInteractions].slice(0, 20);
+    if (!accountStorage.setItem(SAVED_INTERACTIONS_KEY, JSON.stringify(next))) { setToast("保存失败：当前设备存储不可用，请复制记录后重试。"); return; }
     setSavedInteractions(next);
-    window.localStorage.setItem(SAVED_INTERACTIONS_KEY, JSON.stringify(next));
     setToast("互动记录已保存到当前设备");
   }
 
   function removeSavedInteraction(id: string) {
     const next = savedInteractions.filter((interaction) => interaction.id !== id);
+    if (!accountStorage.setItem(SAVED_INTERACTIONS_KEY, JSON.stringify(next))) { setToast("保存失败：当前设备存储不可用，请复制记录后重试。"); return; }
     setSavedInteractions(next);
-    window.localStorage.setItem(SAVED_INTERACTIONS_KEY, JSON.stringify(next));
     setToast("互动记录已删除");
   }
 
@@ -89,7 +89,7 @@ export default function ChatPage() {
       <section className="mb-7 grid gap-6 rounded-[36px] border border-line bg-white p-6 shadow-soft md:p-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
         <div><p className="text-xs font-black uppercase text-primary">Role Interaction</p>
           <h1 className="mt-2 font-display text-4xl font-black md:text-6xl">角色互动</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">从自己的角色资产开始测试口癖、关系动态和场景对话。这里不是预置陪聊角色池，当前只做前端模拟。</p>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">使用自己的角色资产预演口癖、关系和场景对话。当前为免费模板演示，尚未接入 AI；互动记录只保存在当前设备的本账号下。</p>
         </div>
         <FeatureArtPanel src="/images/artwork/starlight-mage.png" alt="星光魔法少女原创角色插画" eyebrow="角色语气预演" caption="围绕已保存角色测试口癖、关系和场景反应" className="min-h-[220px]" />
       </section>
@@ -99,6 +99,7 @@ export default function ChatPage() {
           <label className="text-sm font-black" htmlFor="character">
             选择角色资产
           </label>
+          {loading ? <p role="status">正在读取角色…</p> : error ? <p role="alert" className="text-danger">{error} <button onClick={() => void refresh()} className="underline">重试</button></p> : characters.length === 0 ? <p className="mt-2 text-sm text-muted">请先在创作页保存一个角色。</p> : null}
           <select
             id="character"
             value={characterId}
@@ -144,7 +145,7 @@ export default function ChatPage() {
             placeholder={selectedPrompt.scene}
           />
 
-          <Button type="button" className="mt-5 w-full" onClick={generateDialogue}>
+          <Button type="button" className="mt-5 w-full" disabled={loading || !!error || !selectedCharacter} onClick={generateDialogue}>
             <MessageCircle size={18} aria-hidden="true" />
             生成互动会话
           </Button>

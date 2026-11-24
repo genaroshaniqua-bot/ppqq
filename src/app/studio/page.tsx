@@ -1,5 +1,7 @@
 "use client";
 
+import { accountStorage } from "@/lib/account-storage";
+
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,6 +78,7 @@ function StudioWorkspace() {
   const [history, setHistory] = useState<GenerationRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [toast, setToast] = useState("");
+  const [draftReady, setDraftReady] = useState(false);
 
   const progress = useMemo(() => {
     if (status === "loading") return 1;
@@ -85,22 +88,23 @@ function StudioWorkspace() {
   }, [character, continuation, input.inspiration, status]);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    const saved = accountStorage.getItem(DRAFT_STORAGE_KEY);
     if (saved) {
       try {
         setInput({ ...initialInput, ...(JSON.parse(saved) as Partial<CharacterDraftInput>) });
       } catch {
-        window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+        accountStorage.removeItem(DRAFT_STORAGE_KEY);
       }
     }
     const idea = searchParams.get("idea");
     if (idea) setInput((current) => ({ ...current, inspiration: idea }));
+    setDraftReady(true);
     void loadHistory();
   }, [searchParams]);
 
   useEffect(() => {
-    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(input));
-  }, [input]);
+    if (draftReady) accountStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(input));
+  }, [input, draftReady]);
 
   useEffect(() => {
     if (!toast) return;
@@ -143,7 +147,7 @@ function StudioWorkspace() {
     setContinuationKind(null);
     setGenerationId(null);
     setSavedCharacterId(null);
-    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    accountStorage.removeItem(DRAFT_STORAGE_KEY);
     setToast("已开始一份新的角色草稿");
   }
 
@@ -162,7 +166,7 @@ function StudioWorkspace() {
         owner_id: user.id,
         character_id: characterId,
         generation_type: generationType,
-        prompt,
+        prompt: { ...prompt, mode: "template_demo" },
         result,
         status: "succeeded"
       })
@@ -185,6 +189,7 @@ function StudioWorkspace() {
     setContinuation(null);
     setContinuationKind(null);
     setSavedCharacterId(null);
+    setGenerationId(null);
     await new Promise((resolve) => window.setTimeout(resolve, 520));
     const nextCharacter = generateCharacter(input);
     setCharacter(nextCharacter);
@@ -235,27 +240,18 @@ function StudioWorkspace() {
       const supabase = createSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("登录后才能保存角色");
-      const { data, error: saveError } = await supabase
-        .from("characters")
-        .insert({ owner_id: user.id, name: character.name, summary: character.summary, profile: character, visibility: "private" })
-        .select("id")
-        .single();
-      if (saveError) throw saveError;
-
-      const nextCharacter = { ...character, id: data.id as string };
+      const nextCharacter = await saveCharacter(character);
       setCharacter(nextCharacter);
-      setSavedCharacterId(data.id as string);
-      saveCharacter(nextCharacter);
+      setSavedCharacterId(nextCharacter.id);
       if (generationId) {
-        await supabase.from("ai_generations").update({ character_id: data.id }).eq("id", generationId);
+        await supabase.from("ai_generations").update({ character_id: nextCharacter.id }).eq("id", generationId);
       }
       setCloudStatus("synced");
-      setToast("已保存到 Supabase 角色库");
+      setToast("已保存到账号角色库");
       await loadHistory();
     } catch (saveError) {
-      saveCharacter(character);
       setCloudStatus("offline");
-      setToast(saveError instanceof Error ? `云端保存失败：${saveError.message}` : "云端保存失败，已保留在当前设备");
+      setToast(saveError instanceof Error ? `云端保存失败：${saveError.message}` : "保存失败，请保留此页面并重试");
     } finally {
       setSaving(false);
     }
@@ -291,7 +287,7 @@ function StudioWorkspace() {
       usageScope: "personal",
       requirements: ["需要过程确认", "需要源文件"]
     };
-    window.localStorage.setItem(COMMISSION_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    if (!accountStorage.setItem(COMMISSION_DRAFT_STORAGE_KEY, JSON.stringify(draft))) { setToast("草稿保存失败，请复制内容后重试。"); return; }
     router.push("/create");
   }
 
@@ -314,7 +310,7 @@ function StudioWorkspace() {
     setToast(`已恢复 ${restored.name} 的创作现场`);
   }
 
-  const cloudLabel = cloudStatus === "syncing" ? "同步中" : cloudStatus === "synced" ? "已同步 Supabase" : cloudStatus === "offline" ? "仅保留在当前设备" : "等待创作";
+  const cloudLabel = cloudStatus === "syncing" ? "同步中" : cloudStatus === "synced" ? "云端连接正常" : cloudStatus === "offline" ? "云端同步失败，请重试" : "等待创作";
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
@@ -328,7 +324,7 @@ function StudioWorkspace() {
               </span>
             </div>
             <h1 className="mt-5 max-w-3xl font-display text-4xl font-black tracking-[-0.04em] sm:text-5xl">把一句灵感，推进成能继续创作的角色资产。</h1>
-            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-white/62">生成角色设定，沿着剧情、口吻和头像方向继续扩写；每次成功生成都会进入真实创作记录。</p>
+            <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-white/62">当前为免费模板演示，尚未接入 AI 服务。可生成示例设定并保存到自己的角色库；结果由固定模板组合，不代表 AI 生成。</p>
           </div>
           <div className="space-y-3">
             <FeatureArtPanel src="/images/studio-character-creation.png" alt="画师在数位屏上绘制原创幻想角色" eyebrow="从灵感到角色资产" caption="人设、配色、立绘和周边方向在同一个创作现场持续推进" className="min-h-[210px]" priority />

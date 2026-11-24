@@ -1,6 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { accountStorage, setActiveStorageUser } from "@/lib/account-storage";
+
+import { Fragment, createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   canUseArtistWorkspace,
@@ -28,6 +30,7 @@ type RoleWorkspaceContextValue = {
 const RoleWorkspaceContext = createContext<RoleWorkspaceContextValue | null>(null);
 
 export function RoleWorkspaceProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+  const [userId, setUserId] = useState<string | null>(null);
   const [accountRole, setAccountRole] = useState<AccountRole | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -35,9 +38,16 @@ export function RoleWorkspaceProvider({ children }: Readonly<{ children: React.R
   const [workspace, setWorkspace] = useState<WorkspaceRole>("user");
   const [loading, setLoading] = useState(true);
 
+  const roleRequest = useRef(0);
+  const invalidateRole = useCallback(() => { roleRequest.current++; }, []);
   async function refreshRole() {
+    const request = ++roleRequest.current;
     const supabase = createSupabaseBrowserClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    if (request !== roleRequest.current) return;
+    setActiveStorageUser(user?.id ?? null);
+    setUserId(user?.id ?? null);
 
     if (!user) {
       setAccountRole(null);
@@ -54,9 +64,10 @@ export function RoleWorkspaceProvider({ children }: Readonly<{ children: React.R
       supabase.from("artist_profiles").select("review_status").eq("user_id", user.id).maybeSingle()
     ]);
 
+    if (request !== roleRequest.current) return;
     const nextRole = (profile?.role ?? "user") as AccountRole;
     const nextArtistStatus = (artist?.review_status ?? null) as ArtistReviewStatus | null;
-    const savedWorkspace = window.localStorage.getItem(ROLE_WORKSPACE_STORAGE_KEY);
+    const savedWorkspace = accountStorage.getItem(ROLE_WORKSPACE_STORAGE_KEY);
     const artistAvailable = canUseArtistWorkspace(nextRole, nextArtistStatus);
     const nextWorkspace = savedWorkspace === "artist" && artistAvailable ? "artist" : "user";
 
@@ -65,13 +76,24 @@ export function RoleWorkspaceProvider({ children }: Readonly<{ children: React.R
     setAvatarUrl(profile?.avatar_url ?? null);
     setArtistReviewStatus(nextArtistStatus);
     setWorkspace(nextWorkspace);
-    window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, nextWorkspace);
+    accountStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, nextWorkspace);
     setLoading(false);
   }
 
   useEffect(() => {
-    refreshRole().catch(() => setLoading(false));
-  }, []);
+    let mounted = true;
+    void refreshRole().catch(() => setLoading(false));
+    const { data: { subscription } } = createSupabaseBrowserClient().auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        roleRequest.current++;
+        setAccountRole(null); setArtistReviewStatus(null); setDisplayName(null); setAvatarUrl(null); setWorkspace("user"); setLoading(true);
+        setActiveStorageUser(session?.user.id ?? null);
+        setUserId(session?.user.id ?? null);
+        setTimeout(() => { if (mounted) void refreshRole().catch(() => setLoading(false)); }, 0);
+      }
+    });
+    return () => { mounted = false; invalidateRole(); subscription.unsubscribe(); };
+  }, [invalidateRole]);
 
   const artistWorkspaceAvailable = canUseArtistWorkspace(accountRole, artistReviewStatus);
   const capabilities = accountRole ? getCapabilities(accountRole, artistReviewStatus) : [];
@@ -79,7 +101,7 @@ export function RoleWorkspaceProvider({ children }: Readonly<{ children: React.R
   function switchWorkspace(nextWorkspace: WorkspaceRole) {
     if (nextWorkspace === "artist" && !artistWorkspaceAvailable) return false;
     setWorkspace(nextWorkspace);
-    window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, nextWorkspace);
+    accountStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, nextWorkspace);
     return true;
   }
 
@@ -96,7 +118,7 @@ export function RoleWorkspaceProvider({ children }: Readonly<{ children: React.R
     refreshRole
   };
 
-  return <RoleWorkspaceContext.Provider value={value}>{children}</RoleWorkspaceContext.Provider>;
+  return <RoleWorkspaceContext.Provider value={value}><Fragment key={userId ?? "anonymous"}>{children}</Fragment></RoleWorkspaceContext.Provider>;
 }
 
 export function useRoleWorkspace() {

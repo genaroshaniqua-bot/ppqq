@@ -85,7 +85,8 @@ export function FeatureAgreementGate() {
     }
 
     const activeDocuments = (documents ?? []) as ActiveDocument[];
-    if (activeDocuments.length === 0) {
+    if (required.some((type) => !activeDocuments.some((document) => document.document_type === type))) {
+      setError("必要协议尚未发布，相关功能暂不可用。请稍后重试。");
       setQueue([]);
       setLoading(false);
       return;

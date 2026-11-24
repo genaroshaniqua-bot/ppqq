@@ -1,5 +1,7 @@
 "use client";
 
+import { accountStorage } from "@/lib/account-storage";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,7 +41,7 @@ export default function CreatePage() {
     const params = new URLSearchParams(window.location.search);
     const requestedService = params.get("service");
     const requestedLicense = params.get("license");
-    const raw = window.localStorage.getItem(COMMISSION_DRAFT_STORAGE_KEY);
+    const raw = accountStorage.getItem(COMMISSION_DRAFT_STORAGE_KEY);
     let restoredDraft = false;
 
     if (raw) {
@@ -54,7 +56,7 @@ export default function CreatePage() {
         setRequirements(draft.requirements);
         restoredDraft = true;
       } catch {
-        window.localStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+        accountStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
       }
     }
 
@@ -104,14 +106,14 @@ export default function CreatePage() {
   function saveDraft() {
     const draft = getDraft();
     if (!draft) return;
-    window.localStorage.setItem(COMMISSION_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    if (!accountStorage.setItem(COMMISSION_DRAFT_STORAGE_KEY, JSON.stringify(draft))) { setToast("草稿保存失败，当前设备存储不可用，请复制内容后重试。"); return; }
     setToast("需求草稿已保存在当前设备");
   }
 
   function matchService() {
     const draft = getDraft();
     if (!draft) return;
-    window.localStorage.setItem(COMMISSION_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    if (!accountStorage.setItem(COMMISSION_DRAFT_STORAGE_KEY, JSON.stringify(draft))) { setToast("草稿保存失败，当前设备存储不可用，请复制内容后重试。"); return; }
     router.push("/profile/commissions?draft=1");
   }
 
@@ -139,7 +141,7 @@ export default function CreatePage() {
       setToast(error.message.includes("publish_public_commission") ? "公开需求服务尚未初始化，请稍后重试" : error.message);
       return;
     }
-    window.localStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
+    accountStorage.removeItem(COMMISSION_DRAFT_STORAGE_KEY);
     setToast(draft.budgetMax >= 3000 || usageScope !== "personal" ? "需求已提交，等待管理员审核" : "需求已通过自动检查并公开发布");
     window.setTimeout(() => router.push(`/profile/commissions?public=${data}`), 900);
   }

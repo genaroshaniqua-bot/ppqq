@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url || !anonKey) return NextResponse.next();
+  if (!url || !anonKey) return new NextResponse("身份服务暂时不可用，请稍后重试。", { status: 503 });
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {
@@ -32,25 +32,31 @@ export async function middleware(request: NextRequest) {
 
   try {
     const pathname = request.nextUrl.pathname;
+    // Health is a public probe and must not depend on the caller's workspace.
+    if (pathname === "/api/health") return response;
     const isArtistWorkspace = pathname === "/artist" || pathname.startsWith("/artist/");
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       if (publicPath(pathname)) return response;
+      if (pathname.startsWith("/api/")) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
       loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
       return NextResponse.redirect(loginUrl);
     }
 
-    const [{ data: profile }, { data: artist }] = await Promise.all([
-      supabase.from("profiles").select("role, account_status").eq("id", user.id).single(),
+    const [{ data: profile, error: profileError }, { data: artist, error: artistError }] = await Promise.all([
+      supabase.from("profiles").select("role, account_status").eq("id", user.id).maybeSingle(),
       isArtistWorkspace
         ? supabase.from("artist_profiles").select("review_status").eq("user_id", user.id).maybeSingle()
-        : Promise.resolve({ data: null })
+        : Promise.resolve({ data: null, error: null })
     ]);
 
-    if (profile?.account_status === "suspended") {
+    if (profileError || artistError) throw new Error("Account lookup failed");
+    if (!profile || profile.account_status !== "active") {
+      if (publicPath(pathname)) return response;
+      if (pathname.startsWith("/api/")) return NextResponse.json({ error: "account_unavailable" }, { status: 403 });
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
       loginUrl.searchParams.set("reason", "suspended");
@@ -65,7 +71,11 @@ export async function middleware(request: NextRequest) {
       pathname === "/trust" ||
       pathname === "/support" ||
       pathname.startsWith("/legal/") ||
-      pathname === "/login";
+      pathname === "/login" ||
+      pathname.startsWith("/auth/") ||
+      pathname === "/forgot-password" ||
+      pathname === "/reset-password" ||
+      pathname === "/api/telemetry/client-error";
 
     if (profile?.role === "admin" && !adminAllowedPath) {
       return NextResponse.redirect(new URL("/admin", request.url));

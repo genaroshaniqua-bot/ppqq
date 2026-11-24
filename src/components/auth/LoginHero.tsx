@@ -1,5 +1,7 @@
 "use client";
 
+import { accountStorage, setActiveStorageUser } from "@/lib/account-storage";
+
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
@@ -30,7 +32,7 @@ export function LoginHero() {
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("reason") === "suspended") {
-      setAuthMessage({ type: "error", text: "此账户已被管理员暂停，请联系平台处理。" });
+      setAuthMessage({ type: "error", text: "账号资料无法读取或账户已暂停，请稍后重试或联系平台。" });
     }
     const savedAppearance = readLoginAppearance();
     if (savedAppearance !== "custom") {
@@ -97,6 +99,7 @@ export function LoginHero() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("登录状态未建立，请重试。");
+      setActiveStorageUser(user.id);
 
       const pendingConsentEmail = window.localStorage.getItem(PENDING_LEGAL_CONSENT_KEY);
       if (mode === "register" || pendingConsentEmail === email.toLowerCase()) {
@@ -128,9 +131,9 @@ export function LoginHero() {
         supabase.from("artist_profiles").select("review_status").eq("user_id", user.id).maybeSingle()
       ]);
 
-      if (profile?.account_status === "suspended") {
+      if (!profile || profile.account_status !== "active") {
         await supabase.auth.signOut();
-        throw new Error("此账户已被管理员暂停，请联系平台处理。");
+        throw new Error("账号资料无法读取或账户已暂停，请稍后重试或联系平台。");
       }
 
       const requestedNext = new URLSearchParams(window.location.search).get("next");
@@ -139,16 +142,16 @@ export function LoginHero() {
         : null;
 
       if (profile?.role === "admin") {
-        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
+        accountStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
         router.push(safeNext ?? "/admin");
       } else if (entryRole === "artist" && profile?.role === "artist" && artist?.review_status === "approved") {
-        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "artist");
+        accountStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "artist");
         router.push(safeNext ?? "/artist");
       } else if (entryRole === "artist") {
-        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
+        accountStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
         router.push("/profile?apply=artist");
       } else {
-        window.localStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
+        accountStorage.setItem(ROLE_WORKSPACE_STORAGE_KEY, "user");
         router.push(safeNext ?? "/home");
       }
       router.refresh();

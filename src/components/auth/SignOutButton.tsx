@@ -5,16 +5,20 @@ import { useRouter } from "next/navigation";
 import { LoaderCircle, LogOut, X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { setActiveStorageUser } from "@/lib/account-storage";
 
 export function SignOutButton({ compact = false, className }: { compact?: boolean; className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function confirmSignOut() {
     setLoading(true);
     const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) { setError("退出失败，请重试。"); setLoading(false); return; }
+    setActiveStorageUser(null);
     router.replace("/login");
     router.refresh();
   }
@@ -52,6 +56,7 @@ export function SignOutButton({ compact = false, className }: { compact?: boolea
             <span className="grid size-12 place-items-center rounded-full bg-danger/10 text-danger"><LogOut size={21} aria-hidden="true" /></span>
             <h2 id="sign-out-title" className="mt-5 font-display text-2xl font-black">确定退出登录？</h2>
             <p id="sign-out-description" className="mt-2 text-sm font-semibold leading-6 text-muted">退出后需要重新输入账号密码才能继续管理角色、订单和委托。</p>
+            {error ? <p role="alert" className="mt-3 text-sm text-danger">{error}</p> : null}
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button type="button" disabled={loading} onClick={() => setOpen(false)} className="min-h-11 rounded-pill border border-line bg-white text-sm font-black hover:bg-bg">继续使用</button>
               <button type="button" disabled={loading} onClick={confirmSignOut} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-ink text-sm font-black text-white disabled:opacity-60">
