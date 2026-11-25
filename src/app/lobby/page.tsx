@@ -23,14 +23,6 @@ export default async function LobbyPage() {
     const imageUrl = await resolvePortfolioImage(supabase, item.image_url);
     return { ...item, image_url: imageUrl, media_reference: item.image_url, artist_name: profile?.display_name ?? "WEIMING 画师", artist_avatar: profile?.avatar_url ?? null, source: "portfolio" } as LobbyItem;
   }));
-  const curatedPosters: LobbyItem[] = [
-    ["poster-01.jpg", "心动女仆日", ["女仆", "Q版", "角色"]], ["poster-02.jpg", "午后苏打", ["日常", "少女", "清新"]],
-    ["poster-03.jpg", "星轨取景框", ["镜头", "城市", "角色"]], ["poster-04.jpg", "银色双生", ["双人", "银发", "幻想"]],
-    ["poster-05.jpg", "花嫁时刻", ["花嫁", "礼服", "氛围"]], ["poster-06.jpg", "霓虹晴日", ["街景", "潮流", "少女"]],
-    ["poster-07.jpg", "蓝色呼吸", ["运动", "蓝色", "夏日"]], ["poster-08.jpg", "星球开场", ["运动", "网球", "活力"]],
-    ["poster-09.jpg", "深海来信", ["水族", "粉色", "幻想"]], ["poster-10.png", "星光魔法", ["魔法少女", "星光", "梦幻"]],
-    ["poster-11.png", "花境精灵", ["精灵", "粉色", "幻想"]]
-  ].map(([file, title, tags], index) => ({ id: `curated-${index + 1}`, artist_id: "", artist_name: "大厅精选", artist_avatar: null, title: String(title), image_url: `/images/lobby-posters/${file}`, tags: tags as string[], category: "海报", visibility: "public", access_price: 0, created_at: new Date(2026, 6, 16, 12, index).toISOString(), source: "curated" }));
-  const items = [...licensedCurated, ...curatedPosters, ...portfolioItems];
+  const items = [...licensedCurated, ...portfolioItems];
   return <div className="mx-auto w-full min-w-0 max-w-[1440px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8"><LobbyGallery items={items} /></div>;
 }

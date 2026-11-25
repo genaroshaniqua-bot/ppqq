@@ -1,12 +1,14 @@
-大厅精选图片许可说明
+大厅图片来源与许可说明
 
-本批共 100 张：AI 生成 92 张，非 AI 创作 8 张。
-图片本身的权利及许可归属见同目录 credits.json 和大厅每张图片的详情。
+本批共 203 张：AI 生成 202 张，非 AI 创作 1 张。
+每张图片的来源、原作名称、授权依据、真实像素尺寸与文件校验值见同目录 credits.json。
 
-StockCake AI 图片：CC0 1.0，https://stockcake.com/info/license
-Tyson Tan（钛山）作品：CC BY-SA 4.0，https://creativecommons.org/licenses/by-sa/4.0/
-Blue / Shurajo & AVALANCHE Game Studio 作品：CC BY 3.0，https://creativecommons.org/licenses/by/3.0/
+StockCake：CC0 1.0，https://stockcake.com/info/license
+Tyson Tan（钛山）：CC BY-SA 4.0，https://creativecommons.org/licenses/by-sa/4.0/
+Kiki 原作及授权：https://krita.org/en/about/mascot/
 
-仅进行等比缩放及 WebP 格式转换，未裁切或改绘。CC BY-SA 图片保持相同许可。
+仅进行等比缩放或 WebP 格式转换，未裁切或改绘。CC BY-SA 图片继续以相同许可提供。
 外部精选展示不代表作者入驻或背书本平台。第三方图片不适用网站代码的许可。
+AI 角色未注明出处时，不推测所属游戏或动漫；画面效果标签不声称是人工绘制过程。
+精选为大厅作品展示，不提供批量素材包，不作为付费解锁内容。
 核验日期：2026-11-25。
