@@ -18,7 +18,7 @@ const marketplaceNavItems = [
   { href: "/market", label: "商店" },
   { href: "/create", label: "发布需求" },
   { href: "/studio", label: "创作功能" },
-  { href: "/materials", label: "素材库" }
+  { href: "/pricing", label: "定价" }
 ];
 
 const artistNavItems = [
@@ -27,8 +27,7 @@ const artistNavItems = [
   { href: "/artist/commissions", label: "委托管理" },
   { href: "/artist/products", label: "商品经营" },
   { href: "/artist/portfolio", label: "作品集" },
-  { href: "/studio", label: "创作功能" },
-  { href: "/materials", label: "素材库" }
+  { href: "/studio", label: "创作功能" }
 ];
 
 const adminNavItems = [

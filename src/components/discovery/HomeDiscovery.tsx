@@ -7,7 +7,6 @@ import { ArrowRight, BadgeCheck, Bookmark, Clock3, Search, ShieldCheck, Sparkles
 import { loadDiscovery, type DiscoveryService, type DiscoveryCreator } from "@/lib/discovery";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { MaterialRail } from "@/components/materials/MaterialRail";
 
 const heroCards = [
   {
@@ -175,7 +174,6 @@ export function HomeDiscovery() {
         </div>
       </section>
 
-      <MaterialRail />
       <section className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div>
