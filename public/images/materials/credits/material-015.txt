@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-015
+雪庭
+原作：The Snowy Garden
+作者：歌川广重 / Cleveland Museum of Art
+来源：https://clevelandart.org/art/1940.989
+源文件：https://openaccess-cdn.clevelandart.org/1940.989/1940.989_web.jpg
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：CMA API share_license_status=CC0；馆方开放获取政策 https://www.clevelandart.org/open-access
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：900 × 440
+文件 SHA-256：26f90c414ff5bed2948f58fc366b6d72f0215bc745051d86baf24869144ccf11
+源文件 SHA-256：624d5174703fe0e0636cec0a59515402ac67651a2276bc75df1fc90641141c3c
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

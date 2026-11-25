@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-058
+愤怒表情·气泡贴纸
+原作：Emotes Pack — Style 1 / emote_faceAngry.png
+作者：Kenney
+来源：https://opengameart.org/content/emotes-pack
+源文件：kenney_emotesPack.zip / PNG/Vector/Style 1/emote_faceAngry.png
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：/images/materials/licenses/emotes-pack.txt
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：32 × 38
+文件 SHA-256：d13a38fd711f79d32974307b2998edab397e37d135a296d6f0fba8d2cc89b158
+源文件 SHA-256：edcbad27f5937a13754ff7518115bc7900ca600911f9e1a1a9883913aec3a5cb
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

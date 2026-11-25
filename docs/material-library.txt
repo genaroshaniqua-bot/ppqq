@@ -1,0 +1,17 @@
+开放素材库 · 2026-11-25
+
+首批 100 份：头像 18（原创手绘角色 8、动物 10）、海报底图 20、场景背景 7、表情贴纸 25、装饰纹样 30。
+来源：stevenburrow 在 OpenGameArt 发布的从零创作角色；Kenney 本人发布的四套 CC0 素材；Cleveland Museum of Art 逐件标注 CC0 的歌川广重版画。
+没有采购付费包，也没有收录动漫官方宣传海报、未获授权的同人图或授权争议 AI 图片。
+
+页面 /materials 支持中文名称、原名、作者与标签的多词搜索；分类与标签取交集；筛选状态存于 URL，支持分享、刷新和返回。首屏混合各类，分批加载，每份素材有详情、实际尺寸、下载、原始来源与许可说明。
+首页、普通用户和画师顶部导航、所有身份页脚均有入口。管理员可以只读浏览素材库；匿名仍需登录；不更改数据库权限。
+
+文件：public/images/materials/material-001.webp 至 material-100.webp。
+元数据：src/data/materials.json，含原作名称、作者、来源、源文件、许可证、收录日期、处理说明、尺寸、字节数及源文件/发布文件 SHA-256。
+授权：public/images/materials/licenses/，保存原始包内 License.txt 与逐件馆藏 API CC0 记录。
+下载说明：public/images/materials/credits.txt 与 credits/ 各素材说明文件。
+图像仅转为 WebP，保留完整构图、原尺寸和透明度。原始文件见来源链接；小尺寸表情不适合放大印刷；海报为插画底图，未添加活动文案。
+
+核验命令：node scripts/materials-regression.mjs；node scripts/middleware-regression.mjs；pnpm lint；pnpm typecheck；pnpm build。
+后续收录应逐项核实作者授权，避免只信集合页的标签；新增时同步文件、元数据、许可记录与总数。发现权利问题时按素材编号定位并下架。

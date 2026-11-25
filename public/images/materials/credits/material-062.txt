@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-062
+心碎·气泡贴纸
+原作：Emotes Pack — Style 1 / emote_heartBroken.png
+作者：Kenney
+来源：https://opengameart.org/content/emotes-pack
+源文件：kenney_emotesPack.zip / PNG/Vector/Style 1/emote_heartBroken.png
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：/images/materials/licenses/emotes-pack.txt
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：32 × 38
+文件 SHA-256：56714da7627dfe455da63aa5ba86a6877cbd70a2daf7405218e12ba61ff555c9
+源文件 SHA-256：831177e36f78abfc60a79cad97f87128fe314d01e738b68040fe3d2ae8cf7a26
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-071
+立体方格
+原作：Pattern Pack 2 — Thick / pattern_0000.png
+作者：Kenney
+来源：https://opengameart.org/content/pattern-pack-2
+源文件：kenney_patternpack2.zip / PNG/Thick/Double (512px)/pattern_0000.png
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：/images/materials/licenses/pattern-pack-2.txt
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：512 × 512
+文件 SHA-256：b1118fe55e9a29d60ef3aa22f4e1e3be3b22ff220b238313df8911837e0dee6f
+源文件 SHA-256：79c10d357765e9a31b3f59c9230c30fe5fba929e5e6b598242d12763f1036306
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

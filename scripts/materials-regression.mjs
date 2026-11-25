@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import vm from 'node:vm';
+import ts from 'typescript';
+
+const catalog = JSON.parse(await readFile('src/data/materials.json', 'utf8'));
+assert.equal(catalog.length, 100);
+assert.equal(new Set(catalog.map(item => item.id)).size, 100);
+assert.equal(new Set(catalog.map(item => item.sha256)).size, 100);
+const counts = { '头像': 18, '海报底图': 20, '场景背景': 7, '表情贴纸': 25, '装饰纹样': 30 };
+for (const [category, count] of Object.entries(counts)) assert.equal(catalog.filter(item => item.category === category).length, count);
+for (const item of catalog) {
+  assert.match(item.file, /^\/images\/materials\/material-\d{3}\.webp$/);
+  const bytes = await readFile(`public${item.file}`);
+  assert.equal(bytes.toString('ascii', 0, 4), 'RIFF');
+  assert.equal(bytes.toString('ascii', 8, 12), 'WEBP');
+  assert.equal(bytes.length, item.bytes);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), item.sha256);
+  assert.ok(item.width > 0 && item.height > 0);
+  assert.ok(item.tags.length >= 3);
+  assert.equal(item.license, 'CC0-1.0');
+  assert.match(item.sourceUrl, /^https:\/\/((www\.)?clevelandart\.org\/art\/|opengameart\.org\/content\/)/);
+  const credit = await readFile(`public${item.creditFile}`, 'utf8');
+  assert.ok(credit.includes(item.sourceUrl) && credit.includes(item.author) && credit.includes(item.licenseUrl));
+}
+const museum = JSON.parse(await readFile('public/images/materials/licenses/cma-evidence.json', 'utf8'));
+assert.equal(museum.length, 20);
+assert.ok(museum.every(item => item.share_license_status === 'CC0'));
+const context = { exports: {}, require: () => catalog };
+vm.runInNewContext(ts.transpileModule(await readFile('src/lib/materials.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText, context);
+const { filterMaterials, materials } = context.exports;
+assert.equal(materials.length, 100);
+assert.equal(new Set(materials.slice(0, 5).map(item => item.category)).size, 5);
+assert.equal(filterMaterials('二次元', '', '').length, 8);
+assert.equal(filterMaterials('  KENNEY  ', '头像', '').length, 10);
+assert.equal(filterMaterials('', '', '花鸟').length, 5);
+assert.equal(filterMaterials('夜景 雨景', '海报底图', '').length, 1);
+assert.equal(filterMaterials('', '头像', '花鸟').length, 0);
+assert.equal(filterMaterials('不可能匹配的素材', '', '').length, 0);
+console.log('Material regression passed: 100 unique files, hashes, category counts, license records, discovery order and 6 search/filter scenarios.');

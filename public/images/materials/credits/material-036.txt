@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-036
+小猪·圆形头像
+原作：Animal Pack — Round/pig.png
+作者：Kenney
+来源：https://opengameart.org/content/animal-pack
+源文件：kenney-animalpack.zip / PNG/Round/pig.png
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：/images/materials/licenses/animal-pack.txt
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：288 × 257
+文件 SHA-256：ea799bf1efd385b3643c98acda34ca8a32f4cde3206e46974c2f5bdcfc090b08
+源文件 SHA-256：a66df1eefe99bd1434618e1af2a453e74e7d0d403f9d8f84c96b27a55b09438e
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

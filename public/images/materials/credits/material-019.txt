@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-019
+蜡嘴鸟与铁线莲
+原作：Grosbeak and Clematis
+作者：歌川广重 / Cleveland Museum of Art
+来源：https://clevelandart.org/art/1920.163
+源文件：https://openaccess-cdn.clevelandart.org/1920.163/1920.163_web.jpg
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：CMA API share_license_status=CC0；馆方开放获取政策 https://www.clevelandart.org/open-access
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：456 × 900
+文件 SHA-256：b454083af56fa7b8b0de324c977404e4fd3c9a0dbfc64408d84969472dde4d1d
+源文件 SHA-256：444c0357629af23ce516f8db1d5a180f6b6fd878addbd7619e404ea5b7a1de31
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

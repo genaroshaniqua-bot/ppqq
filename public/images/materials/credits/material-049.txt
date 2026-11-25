@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-049
+金币心情·气泡贴纸
+原作：Emotes Pack — Style 1 / emote_cash.png
+作者：Kenney
+来源：https://opengameart.org/content/emotes-pack
+源文件：kenney_emotesPack.zip / PNG/Vector/Style 1/emote_cash.png
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：/images/materials/licenses/emotes-pack.txt
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：32 × 38
+文件 SHA-256：a89d0f1c03f989a01718e586e35b03d066e08fa08c5d8ae7ae1d2161c9404987
+源文件 SHA-256：72b5e7d6aab31552c5b40ba941caf22aac1248399e8e83ace23529dd305f6aaf
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

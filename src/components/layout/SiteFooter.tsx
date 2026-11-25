@@ -9,6 +9,8 @@ export function SiteFooter() {
           <p className="mt-2 max-w-2xl text-xs font-semibold leading-6 text-muted">真实支付暂未开放。画师须完成实名准入；主体资料、协议版本和合规复核记录在信任中心持续公示。</p>
         </div>
         <nav aria-label="法律与安全" className="flex flex-wrap items-start gap-x-5 gap-y-3 font-bold text-muted">
+          <Link href="/materials" className="hover:text-ink">开放素材库</Link>
+          <Link href="/pricing" className="hover:text-ink">定价说明</Link>
           <Link href="/support" className="hover:text-ink">客服中心</Link>
           <Link href="/trust" className="hover:text-ink">信任与安全</Link>
           <Link href="/legal/operator" className="hover:text-ink">经营主体信息</Link>

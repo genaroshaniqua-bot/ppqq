@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-084
+交叉窗格
+原作：Pattern Pack 2 — Thick / pattern_0013.png
+作者：Kenney
+来源：https://opengameart.org/content/pattern-pack-2
+源文件：kenney_patternpack2.zip / PNG/Thick/Double (512px)/pattern_0013.png
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：/images/materials/licenses/pattern-pack-2.txt
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：512 × 512
+文件 SHA-256：fc9ff49ef6970f4d3c4a8d297079d2b4b86d9416dfedbf5ce9b374bf5c4a24e0
+源文件 SHA-256：dcd1715dc42d3684b5a43bfc66d0d296a0f576a88d3cdbcd3bee19c9341a8796
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

@@ -1,0 +1,14 @@
+WEIMING 开放素材 · material-021
+棕发双马尾·微笑
+原作：Anime Girl and Boy Portraits — Sample1
+作者：stevenburrow
+来源：https://opengameart.org/content/anime-girl-and-boy-portraits
+源文件：allanime-11-28-2020.zip / AllAnime/Sample1.png
+许可：CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+核验依据：作者来源页标注 CC0，并说明从零创作；/images/materials/licenses/sources.json
+收录日期：2026-11-25
+处理：保留完整构图与透明度，转换为 WebP，未裁切。
+尺寸：1000 × 1000
+文件 SHA-256：391da36959d468edab5e96dddca72ef7481df424452a70d42078ede0c6249a55
+源文件 SHA-256：d0897aaa12540b372c087c96f3012e129ddbbcbad29328a1cc996aef5c0f2831
+可复制、改编与商用，无需强制署名。保留来源便于核查；不代表作者或馆方背书，不授予商标等其他权利。

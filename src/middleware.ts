@@ -64,6 +64,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const adminAllowedPath =
+      pathname === "/materials" || pathname.startsWith("/materials/") ||
       pathname.startsWith("/admin") ||
       pathname.startsWith("/profile") ||
       pathname.startsWith("/artists/") ||
