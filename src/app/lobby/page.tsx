@@ -1,6 +1,12 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LobbyGallery, type LobbyItem } from "@/components/lobby/LobbyGallery";
 import { resolvePortfolioImage } from "@/lib/portfolio-media";
+import curatedRecords from "@/data/lobby-curated.json";
+
+const licensedCurated = curatedRecords.map((item) => ({
+  ...item, artist_id: "", artist_avatar: null, visibility: "public", access_price: 0,
+  created_at: "2026-11-25T00:00:00.000Z", source: "curated"
+})) as LobbyItem[];
 
 export default async function LobbyPage() {
   const supabase = await createSupabaseServerClient();
@@ -25,6 +31,6 @@ export default async function LobbyPage() {
     ["poster-09.jpg", "深海来信", ["水族", "粉色", "幻想"]], ["poster-10.png", "星光魔法", ["魔法少女", "星光", "梦幻"]],
     ["poster-11.png", "花境精灵", ["精灵", "粉色", "幻想"]]
   ].map(([file, title, tags], index) => ({ id: `curated-${index + 1}`, artist_id: "", artist_name: "大厅精选", artist_avatar: null, title: String(title), image_url: `/images/lobby-posters/${file}`, tags: tags as string[], category: "海报", visibility: "public", access_price: 0, created_at: new Date(2026, 6, 16, 12, index).toISOString(), source: "curated" }));
-  const items = [...curatedPosters, ...portfolioItems];
+  const items = [...licensedCurated, ...curatedPosters, ...portfolioItems];
   return <div className="mx-auto w-full min-w-0 max-w-[1440px] px-3 py-4 sm:px-6 sm:py-8 lg:px-8"><LobbyGallery items={items} /></div>;
 }
